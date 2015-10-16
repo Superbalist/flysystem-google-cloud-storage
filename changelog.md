@@ -1,7 +1,5 @@
 # Changelog
 
-## 0.0.1 beta - 2015-10-16
-
-### Fixed
+## 1.0.0 beta - 2015-10-16
 
 * Initial release

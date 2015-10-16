@@ -41,6 +41,3 @@ $filesystem = new Filesystem($adapter);
 ## TODO
 
 * Unit tests to be written
-* writeStream() to be implemented
-* updateStream() to be implemented
-* readStream() to be implemented
