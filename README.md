@@ -1,5 +1,12 @@
 # Flysystem Adapter for Google Cloud Storage
 
+[![Author](http://img.shields.io/badge/author-@superbalist-blue.svg?style=flat-square)](https://twitter.com/superbalist)
+[![Build Status](https://img.shields.io/travis/Superbalist/flysystem-google-storage/master.svg?style=flat-square)](https://travis-ci.org/Superbalist/flysystem-google-storage)
+[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
+[![Packagist Version](https://img.shields.io/packagist/v/superbalist/flysystem-google-storage.svg?style=flat-square)](https://packagist.org/packages/superbalist/flysystem-google-storage)
+[![Total Downloads](https://img.shields.io/packagist/dt/superbalist/flysystem-google-storage.svg?style=flat-square)](https://packagist.org/packages/superbalist/flysystem-google-storage)
+
+
 ## Installation
 
 ```bash
@@ -29,6 +36,7 @@ $adapter = new GoogleStorageAdapter($service, '[[your bucket name]]')
 
 $filesystem = new Filesystem($adapter);
 ```
+
 
 ## TODO
 
