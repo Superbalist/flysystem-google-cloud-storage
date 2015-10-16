@@ -1,12 +1,14 @@
 <?php namespace Superbalist\Flysystem\GoogleStorage;
 
 use League\Flysystem\Adapter\AbstractAdapter;
+use League\Flysystem\Adapter\Polyfill\StreamedTrait;
 use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
 use League\Flysystem\Util;
 
 class GoogleStorageAdapter extends AbstractAdapter
 {
+    use StreamedTrait;
 
     /**
      * @var \Google_Service_Storage
@@ -59,27 +61,9 @@ class GoogleStorageAdapter extends AbstractAdapter
     /**
      * {@inheritdoc}
      */
-    public function writeStream($path, $resource, Config $config)
-    {
-        // TODO: can we implement a stream with google cloud storage?
-        throw new \LogicException('The GoogleStorageAdapter does not support writing from a stream.');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function update($path, $contents, Config $config)
     {
         return $this->upload($path, $contents, $config);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function updateStream($path, $resource, Config $config)
-    {
-        // TODO: can we implement a stream with google cloud storage?
-        throw new \LogicException('The GoogleStorageAdapter does not support updating from a stream.');
     }
 
     /**
@@ -271,15 +255,6 @@ class GoogleStorageAdapter extends AbstractAdapter
         $object = $this->normaliseObject($object);
         $object['contents'] = $this->service->objects->get($this->bucket, $path, ['alt' => 'media']);
         return $object;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readStream($path)
-    {
-        // TODO: can we implement a stream with google cloud storage?
-        throw new \LogicException('The GoogleStorageAdapter does not support reading from a stream.');
     }
 
     /**
