@@ -177,11 +177,11 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function copy($path, $newpath)
     {
-        $params = array(
+        $params = [
             'destinationPredefinedAcl' => $this->getRawVisibility($path) == AdapterInterface::VISIBILITY_PUBLIC ?
                 'publicRead' :
                 'private'
-        );
+        ];
         $this->service->objects->copy(
             $this->bucket,
             $path,
@@ -269,7 +269,7 @@ class GoogleStorageAdapter extends AbstractAdapter
         // TODO: can this be optimised to not perform 2 x api calls here?
         $object = $this->getObject($path);
         $object = $this->normaliseObject($object);
-        $object['contents'] = $this->service->objects->get($this->bucket, $path, array('alt' => 'media'));
+        $object['contents'] = $this->service->objects->get($this->bucket, $path, ['alt' => 'media']);
         return $object;
     }
 
