@@ -21,7 +21,7 @@ use League\Flysystem\Filesystem;
 
 $credentials = new \Google_Auth_AssertionCredentials(
     '[your service account]',
-    [\Google_Service_Storage::DEVSTORAGE_FULL_CONTROL],
+    [\Google_Service_Storage::DEVSTORAGE_READ_WRITE],
     file_get_contents('[[path to the p12 key file]]'),
     '[[your secret]]'
 );
