@@ -32,3 +32,4 @@ tools:
     php_cpd:
         enabled: true
         excluded_dirs: ["vendor", "spec", "stubs"]
+    php_sim: false
