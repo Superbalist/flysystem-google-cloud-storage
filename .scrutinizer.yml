@@ -1,5 +1,5 @@
 filter:
-    paths: [src/*]
+    paths: ["src/*"]
 checks:
     php:
         code_rating: true
@@ -25,10 +25,11 @@ tools:
         config:
             standard: PSR2
         filter:
-            paths: ['src']
+            paths: ["src"]
     php_loc:
         enabled: true
-        excluded_dirs: [vendor, spec, stubs]
+        excluded_dirs: ["vendor", "spec", "stubs"]
     php_cpd:
         enabled: true
-        excluded_dirs: [vendor, spec, stubs]
+        excluded_dirs: ["vendor", "spec", "stubs"]
+    php_sim: false
