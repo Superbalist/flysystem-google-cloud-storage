@@ -1,8 +1,8 @@
 <?php namespace Superbalist\Flysystem\GoogleStorage;
 
+use League\Flysystem\AdapterInterface;
 use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\Adapter\Polyfill\StreamedTrait;
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
 use League\Flysystem\Util;
 
@@ -283,9 +283,12 @@ class GoogleStorageAdapter extends AbstractAdapter
             }
         }
 
-        $results = array_map(function(\Google_Service_Storage_StorageObject $object) {
-            return $this->normaliseObject($object);
-        }, $results);
+        $results = array_map(
+            function (\Google_Service_Storage_StorageObject $object) {
+                return $this->normaliseObject($object);
+            },
+            $results
+        );
         return Util::emulateDirectories($results);
     }
 
@@ -364,7 +367,8 @@ class GoogleStorageAdapter extends AbstractAdapter
      *
      * @param string $path Object path in the current bucket
      */
-    protected function publishObject($path) {
+    protected function publishObject($path)
+    {
         if ($this->getRawVisibility($path) === AdapterInterface::VISIBILITY_PUBLIC) {
             return;
         }
@@ -380,7 +384,8 @@ class GoogleStorageAdapter extends AbstractAdapter
      *
      * @param string $path
      */
-    protected function unPublishObject($path) {
+    protected function unPublishObject($path)
+    {
         $controls = $this->service->objectAccessControls->listObjectAccessControls($this->bucket, $path);
         // Cycle through existent entries in the ACL and only delete the `allUsers` entry if it is set to `allUsers`
         foreach ($controls->getItems() as $control) {
@@ -402,7 +407,8 @@ class GoogleStorageAdapter extends AbstractAdapter
      *
      * @return bool
      */
-    protected function isPublicAccessControl($control) {
+    protected function isPublicAccessControl($control)
+    {
         return $control['role'] === 'READER' && $control['entity'] === 'allUsers';
     }
 }
