@@ -257,7 +257,11 @@ class GoogleStorageAdapter extends AbstractAdapter
         // TODO: can this be optimised to not perform 2 x api calls here?
         $object = $this->getObject($path);
         $object = $this->normaliseObject($object);
-        $object['contents'] = $this->service->objects->get($this->bucket, $path, ['alt' => 'media']);
+        $contents = $this->service->objects->get($this->bucket, $path, ['alt' => 'media']);
+        if ($contents === false) {
+            $contents = null;
+        }
+        $object['contents'] = $contents;
         return $object;
     }
 
