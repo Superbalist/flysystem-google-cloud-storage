@@ -1,11 +1,11 @@
 # Changelog
 
-## 1.0.3 - 2016-05-19
+## 1.0.4 - 2016-05-19
 
 * Remove support for 2.0.0RC of google/apiclient - not backwards compatible
 * Fix to incorrect classification of files vs folders (@paulcanning)
 
-## 1.0.2 - 2016-04-12
+## 1.0.3 - 2016-04-12
 
 * Fix to now return null instead of false when a file is empty (@paulcanning)
 
