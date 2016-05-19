@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0-RC1 - 2016-05-19
+
+* Switch to 2.0.0RC of google/apiclient
+
 ## 1.0.4 - 2016-05-19
 
 * Remove support for 2.0.0RC of google/apiclient - not backwards compatible
