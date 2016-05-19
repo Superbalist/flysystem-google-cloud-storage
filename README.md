@@ -19,16 +19,11 @@ composer require superbalist/flysystem-google-storage
 use Superbalist\Flysystem\GoogleStorage\GoogleStorageAdapter;
 use League\Flysystem\Filesystem;
 
-$credentials = new \Google_Auth_AssertionCredentials(
-    '[your service account]',
-    [\Google_Service_Storage::DEVSTORAGE_FULL_CONTROL],
-    file_get_contents('[[path to the p12 key file]]'),
-    '[[your secret]]'
-);
+putenv('GOOGLE_APPLICATION_CREDENTIALS=[[path to json key file]]');
 
 $client = new \Google_Client();
-$client->setAssertionCredentials($credentials);
-$client->setDeveloperKey('[[your developer key]]');
+$client->useApplicationDefaultCredentials();
+$client->setScopes([\Google_Service_Storage::DEVSTORAGE_FULL_CONTROL]);
 
 $service = new \Google_Service_Storage($client);
 
