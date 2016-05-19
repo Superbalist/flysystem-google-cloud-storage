@@ -135,10 +135,16 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     protected function normaliseObject(\Google_Service_Storage_StorageObject $object)
     {
+        $name = $object->getName();
+        $isDir = substr($name, -1) === '/';
+        if ($isDir) {
+            $name = rtrim($name, '/');
+        }
+
         return [
-            'type' => 'file',
-            'dirname' => Util::dirname($object->getName()),
-            'path' => $object->getName(),
+            'type' => $isDir ? 'dir' : 'file',
+            'dirname' => Util::dirname($name),
+            'path' => $name,
             'timestamp' => strtotime($object->getUpdated()),
             'mimetype' => $object->getContentType(),
             'size' => $object->getSize(),

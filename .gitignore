@@ -4,3 +4,4 @@ vendor
 bin
 coverage
 coverage.xml
+dev
