@@ -16,7 +16,7 @@ composer require superbalist/flysystem-google-storage
 ## Usage
 
 ```php
-use Superbalist\Flysystem\GoogleStorage\GoogleStorageAdapter
+use Superbalist\Flysystem\GoogleStorage\GoogleStorageAdapter;
 use League\Flysystem\Filesystem;
 
 $credentials = new \Google_Auth_AssertionCredentials(
@@ -32,7 +32,7 @@ $client->setDeveloperKey('[[your developer key]]');
 
 $service = new \Google_Service_Storage($client);
 
-$adapter = new GoogleStorageAdapter($service, '[[your bucket name]]')
+$adapter = new GoogleStorageAdapter($service, '[[your bucket name]]');
 
 $filesystem = new Filesystem($adapter);
 ```
