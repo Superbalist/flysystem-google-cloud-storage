@@ -285,7 +285,7 @@ class GoogleStorageAdapter extends AbstractAdapter
                 $params['pageToken'] = $pageToken;
             }
 
-            if (trim($directory) != '') {
+            if (trim($directory) !== '') {
                 $params['prefix'] = $directory.'/';
             }
 
