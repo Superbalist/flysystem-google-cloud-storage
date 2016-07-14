@@ -1,5 +1,8 @@
-<?php namespace Superbalist\Flysystem\GoogleStorage;
+<?php
 
+namespace Superbalist\Flysystem\GoogleStorage;
+
+use GuzzleHttp\Psr7\Request;
 use League\Flysystem\AdapterInterface;
 use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\Adapter\Polyfill\StreamedTrait;
@@ -262,13 +265,17 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         // TODO: can this be optimised to not perform 2 x api calls here?
         $object = $this->getObject($path);
-        $object = $this->normaliseObject($object);
-        $contents = $this->service->objects->get($this->bucket, $path, ['alt' => 'media']);
-        if ($contents === false) {
-            $contents = null;
+
+        try {
+            $response = $this->service->getClient()->execute(new Request('GET', $object->getMediaLink()));
+        } catch (\Exception $e) {
+            return false;
         }
-        $object['contents'] = $contents;
-        return $object;
+
+        $result = $this->normaliseObject($object);
+        $result['contents'] = (string) $response->getBody();
+
+        return $result;
     }
 
     /**
