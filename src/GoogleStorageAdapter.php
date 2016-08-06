@@ -76,13 +76,13 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         $options = [];
 
-        if ($config->has('visibility')) {
+        if ($config->get('visibility')) {
             $options['acl'] = $config->get('visibility') === AdapterInterface::VISIBILITY_PUBLIC ?
                 AdapterInterface::VISIBILITY_PUBLIC :
                 AdapterInterface::VISIBILITY_PRIVATE;
         }
 
-        if ($config->has('mimetype')) {
+        if ($config->get('mimetype')) {
             $options['mimetype'] = $config->get('mimetype');
         }
 
