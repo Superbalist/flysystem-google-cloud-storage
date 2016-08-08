@@ -284,6 +284,11 @@ class GoogleStorageAdapter extends AbstractAdapter
             if ($pageToken) {
                 $params['pageToken'] = $pageToken;
             }
+
+            if (trim($directory) !== '') {
+                $params['prefix'] = $directory.'/';
+            }
+
             $objects = $this->service->objects->listObjects($this->bucket, $params);
             $results = array_merge($results, $objects->getItems());
             $pageToken = $objects->getNextPageToken();
