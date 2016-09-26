@@ -16,23 +16,44 @@ composer require superbalist/flysystem-google-storage
 ## Usage
 
 ```php
-use Superbalist\Flysystem\GoogleStorage\GoogleStorageAdapter;
+use Google\Cloud\Storage\StorageClient;
 use League\Flysystem\Filesystem;
+use Superbalist\Flysystem\GoogleStorage\GoogleStorageAdapter;
 
-$credentials = new \Google_Auth_AssertionCredentials(
-    '[your service account]',
-    [\Google_Service_Storage::DEVSTORAGE_FULL_CONTROL],
-    file_get_contents('[[path to the p12 key file]]'),
-    '[[your secret]]'
-);
+/**
+ * The credentials will be auto-loaded by the Google Cloud Client.
+ *
+ * 1. The client will first look at the GOOGLE_APPLICATION_CREDENTIALS env var.
+ *    You can use ```putenv('GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json');``` to set the location of your credentials file.
+ *
+ * 2. The client will look for the credentials file at the following paths:
+ * - windows: %APPDATA%/gcloud/application_default_credentials.json
+ * - others: $HOME/.config/gcloud/application_default_credentials.json
+ *
+ * If running in Google App Engine, the built-in service account associated with the application will be used.
+ * If running in Google Compute Engine, the built-in service account associated with the virtual machine instance will be used.
+ */
 
-$client = new \Google_Client();
-$client->setAssertionCredentials($credentials);
-$client->setDeveloperKey('[[your developer key]]');
+$storageClient = new StorageClient([
+    'projectId' => 'your-project-id',
+]);
+$bucket = $storageClient->bucket('your-bucket-name');
 
-$service = new \Google_Service_Storage($client);
+$adapter = new GoogleStorageAdapter($storageClient, $bucket);
 
-$adapter = new GoogleStorageAdapter($service, '[[your bucket name]]');
+$filesystem = new Filesystem($adapter);
+
+/**
+ * The credentials are manually specified by passing in a keyFilePath.
+ */
+
+$storageClient = new StorageClient([
+    'projectId' => 'your-project-id',
+    'keyFilePath' => '/path/to/service-account.json',
+]);
+$bucket = $storageClient->bucket('your-bucket-name');
+
+$adapter = new GoogleStorageAdapter($storageClient, $bucket);
 
 $filesystem = new Filesystem($adapter);
 ```
