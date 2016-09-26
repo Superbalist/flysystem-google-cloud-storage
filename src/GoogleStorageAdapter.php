@@ -1,53 +1,65 @@
-<?php namespace Superbalist\Flysystem\GoogleStorage;
+<?php
 
+namespace Superbalist\Flysystem\GoogleStorage;
+
+use Google\Cloud\Exception\NotFoundException;
+use Google\Cloud\Storage\Acl;
+use Google\Cloud\Storage\Bucket;
+use Google\Cloud\Storage\StorageClient;
+use Google\Cloud\Storage\StorageObject;
+use League\Flysystem\Adapter\Polyfill\StreamedReadingTrait;
 use League\Flysystem\AdapterInterface;
 use League\Flysystem\Adapter\AbstractAdapter;
-use League\Flysystem\Adapter\Polyfill\StreamedTrait;
 use League\Flysystem\Config;
 use League\Flysystem\Util;
 
 class GoogleStorageAdapter extends AbstractAdapter
 {
-    use StreamedTrait;
+    use StreamedReadingTrait;
 
     /**
-     * @var \Google_Service_Storage
+     * @var StorageClient
      */
-    protected $service;
+    protected $storageClient;
 
     /**
-     * @var string
+     * @var Bucket
      */
     protected $bucket;
 
     /**
-     * @param \Google_Service_Storage $service
-     * @param string $bucket
+     * @param StorageClient $storageClient
+     * @param Bucket $bucket
+     * @param string $pathPrefix
      */
-    public function __construct(\Google_Service_Storage $service, $bucket)
+    public function __construct(StorageClient $storageClient, Bucket $bucket, $pathPrefix = null)
     {
-        $this->service = $service;
+        $this->storageClient = $storageClient;
         $this->bucket = $bucket;
+
+        if ($pathPrefix) {
+            $this->setPathPrefix($pathPrefix);
+        }
     }
 
     /**
-     * Returns the bucket name.
+     * Returns the StorageClient.
      *
-     * @return string
+     * @return StorageClient
+     */
+    public function getStorageClient()
+    {
+        return $this->storageClient;
+    }
+
+    /**
+     * Return the Bucket.
+     *
+     * @return \Google\Cloud\Storage\Bucket
      */
     public function getBucket()
     {
         return $this->bucket;
-    }
-
-    /**
-     * Returns the Google_Service_Storage service.
-     *
-     * @return \Google_Service_Storage
-     */
-    public function getService()
-    {
-        return $this->service;
     }
 
     /**
@@ -61,9 +73,29 @@ class GoogleStorageAdapter extends AbstractAdapter
     /**
      * {@inheritdoc}
      */
+    public function writeStream($path, $resource, Config $config)
+    {
+        return $this->upload($path, $resource, $config);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @codeCoverageIgnore
+     */
     public function update($path, $contents, Config $config)
     {
         return $this->upload($path, $contents, $config);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @codeCoverageIgnore
+     */
+    public function updateStream($path, $resource, Config $config)
+    {
+        return $this->upload($path, $resource, $config);
     }
 
     /**
@@ -76,17 +108,13 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         $options = [];
 
-        if ($config->get('visibility')) {
-            $options['acl'] = $config->get('visibility') === AdapterInterface::VISIBILITY_PUBLIC ?
-                AdapterInterface::VISIBILITY_PUBLIC :
-                AdapterInterface::VISIBILITY_PRIVATE;
+        if ($config->has('visibility')) {
+            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility($config->get('visibility'));
+        } else {
+            // if a file is created without an acl, it isn't accessible via the console
+            // we therefore default to private
+            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(AdapterInterface::VISIBILITY_PRIVATE);
         }
-
-        if ($config->get('mimetype')) {
-            $options['mimetype'] = $config->get('mimetype');
-        }
-
-        // TODO: consider other metadata which we can set here
 
         return $options;
     }
@@ -95,34 +123,18 @@ class GoogleStorageAdapter extends AbstractAdapter
      * Uploads a file to the Google Cloud Storage service.
      *
      * @param string $path
-     * @param string $contents
+     * @param string|resource $contents
      * @param Config $config
      * @return array
      */
     protected function upload($path, $contents, Config $config)
     {
+        $path = $this->applyPathPrefix($path);
+
         $options = $this->getOptionsFromConfig($config);
+        $options['name'] = $path;
 
-        if (! isset($options['mimetype'])) {
-            $options['mimetype'] = Util::guessMimeType($path, $contents);
-        }
-
-        $object = new \Google_Service_Storage_StorageObject();
-        $object->setName($path);
-        $object->setContentType($options['mimetype']);
-
-        $params = [
-            'data' => $contents,
-            'uploadType' => 'media',
-            'mimeType' => $options['mimetype']
-        ];
-
-        $object = $this->service->objects->insert($this->bucket, $object, $params);
-
-        // Only publish the file if explicitly asked. If not, default to bucket default ACL
-        if (isset($options['acl']) && $options['acl'] === AdapterInterface::VISIBILITY_PUBLIC) {
-            $this->publishObject($path);
-        }
+        $object = $this->bucket->upload($contents, $options);
 
         return $this->normaliseObject($object);
     }
@@ -130,12 +142,14 @@ class GoogleStorageAdapter extends AbstractAdapter
     /**
      * Returns a dictionary of object metadata from an object.
      *
-     * @param \Google_Service_Storage_StorageObject $object
+     * @param StorageObject $object
      * @return array
      */
-    protected function normaliseObject(\Google_Service_Storage_StorageObject $object)
+    protected function normaliseObject(StorageObject $object)
     {
-        $name = $object->getName();
+        $name = $object->name();
+        $info = $object->info();
+
         $isDir = substr($name, -1) === '/';
         if ($isDir) {
             $name = rtrim($name, '/');
@@ -145,9 +159,9 @@ class GoogleStorageAdapter extends AbstractAdapter
             'type' => $isDir ? 'dir' : 'file',
             'dirname' => Util::dirname($name),
             'path' => $name,
-            'timestamp' => strtotime($object->getUpdated()),
-            'mimetype' => $object->getContentType(),
-            'size' => $object->getSize(),
+            'timestamp' => strtotime($info['updated']),
+            'mimetype' => $info['contentType'],
+            'size' => $info['size'],
         ];
     }
 
@@ -156,7 +170,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function rename($path, $newpath)
     {
-        if (! $this->copy($path, $newpath)) {
+        if (!$this->copy($path, $newpath)) {
             return false;
         }
 
@@ -168,21 +182,16 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function copy($path, $newpath)
     {
-        $originalVisibility = $this->getRawVisibility($path);
+        $newpath = $this->applyPathPrefix($newpath);
 
-        $this->service->objects->copy(
-            $this->bucket,
-            $path,
-            $this->bucket,
-            $newpath,
-            new \Google_Service_Storage_StorageObject()
-        );
+        // we want the new file to have the same visibility as the original file
+        $visibility = $this->getRawVisibility($path);
 
-        if ($originalVisibility === AdapterInterface::VISIBILITY_PUBLIC) {
-            $this->publishObject($newpath);
-        } else {
-            $this->unPublishObject($newpath);
-        }
+        $options = [
+            'name' => $newpath,
+            'predefinedAcl' => $this->getPredefinedAclForVisibility($visibility),
+        ];
+        $this->getObject($path)->copy($this->bucket, $options);
 
         return true;
     }
@@ -192,7 +201,8 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function delete($path)
     {
-        $this->service->objects->delete($this->bucket, $path);
+        $this->getObject($path)->delete();
+
         return true;
     }
 
@@ -228,13 +238,18 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function setVisibility($path, $visibility)
     {
+        $object = $this->getObject($path);
+
         if ($visibility === AdapterInterface::VISIBILITY_PRIVATE) {
-            $this->unPublishObject($path);
-        } else {
-            $this->publishObject($path);
+            $object->acl()->delete('allUsers');
+        } else if ($visibility === AdapterInterface::VISIBILITY_PUBLIC) {
+            $object->acl()->add('allUsers', Acl::ROLE_READER);
         }
 
-        return compact('path', 'visibility');
+        $normalised = $this->normaliseObject($object);
+        $normalised['visibility'] = $visibility;
+
+        return $normalised;
     }
 
     /**
@@ -242,17 +257,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function has($path)
     {
-        try {
-            // to test the existance of an object, we need to retrieve an object
-            // there is no api method to check if an object exists or not
-            $this->getObject($path);
-            return true;
-        } catch (\Google_Service_Exception $e) {
-            if ($e->getCode() == 404) {
-                return false;
-            }
-            throw $e;
-        }
+        return $this->getObject($path)->exists();
     }
 
     /**
@@ -260,15 +265,13 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function read($path)
     {
-        // TODO: can this be optimised to not perform 2 x api calls here?
         $object = $this->getObject($path);
-        $object = $this->normaliseObject($object);
-        $contents = $this->service->objects->get($this->bucket, $path, ['alt' => 'media']);
-        if ($contents === false) {
-            $contents = null;
-        }
-        $object['contents'] = $contents;
-        return $object;
+        $contents = $object->downloadAsString();
+
+        $data = $this->normaliseObject($object);
+        $data['contents'] = $contents;
+
+        return $data;
     }
 
     /**
@@ -276,35 +279,16 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function listContents($directory = '', $recursive = false)
     {
-        $results = [];
-        $pageToken = null;
+        $directory = $this->applyPathPrefix($directory);
 
-        while (true) {
-            $params = [];
-            if ($pageToken) {
-                $params['pageToken'] = $pageToken;
-            }
+        $objects = $this->bucket->objects(['prefix' => $directory]);
 
-            if (trim($directory) !== '') {
-                $params['prefix'] = $directory.'/';
-            }
-
-            $objects = $this->service->objects->listObjects($this->bucket, $params);
-            $results = array_merge($results, $objects->getItems());
-            $pageToken = $objects->getNextPageToken();
-
-            if ($pageToken === null) {
-                break;
-            }
+        $normalised = [];
+        foreach ($objects as $object) {
+            $normalised[] = $this->normaliseObject($object);
         }
 
-        $results = array_map(
-            function (\Google_Service_Storage_StorageObject $object) {
-                return $this->normaliseObject($object);
-            },
-            $results
-        );
-        return Util::emulateDirectories($results);
+        return Util::emulateDirectories($normalised);
     }
 
     /**
@@ -356,74 +340,35 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     protected function getRawVisibility($path)
     {
-        $controls = $this->service->objectAccessControls->listObjectAccessControls($this->bucket, $path);
-        foreach ($controls->getItems() as $control) {
-            if ($this->isPublicAccessControl($control)) {
-                return AdapterInterface::VISIBILITY_PUBLIC;
-            }
+        try {
+            $acl = $this->getObject($path)->acl()->get(['entity' => 'allUsers']);
+            return $acl['role'] === Acl::ROLE_READER ?
+                AdapterInterface::VISIBILITY_PUBLIC :
+                AdapterInterface::VISIBILITY_PRIVATE;
+        } catch (NotFoundException $e) {
+            // object may not have an acl entry, so handle that gracefully
+            return AdapterInterface::VISIBILITY_PRIVATE;
         }
-
-        return AdapterInterface::VISIBILITY_PRIVATE;
     }
 
     /**
      * Returns a storage object for the given path.
      *
      * @param string $path
-     * @return \Google_Service_Storage_StorageObject
+     * @return \Google\Cloud\Storage\StorageObject
      */
     protected function getObject($path)
     {
-        return $this->service->objects->get($this->bucket, $path);
+        $path = $this->applyPathPrefix($path);
+        return $this->bucket->object($path);
     }
 
     /**
-     * Adds an ACL entry that makes the object world-readable
-     *
-     * @param string $path Object path in the current bucket
+     * @param string $visibility
+     * @return string
      */
-    protected function publishObject($path)
+    protected function getPredefinedAclForVisibility($visibility)
     {
-        if ($this->getRawVisibility($path) === AdapterInterface::VISIBILITY_PUBLIC) {
-            return;
-        }
-
-        $publicAcl = new \Google_Service_Storage_ObjectAccessControl();
-        $publicAcl->setEntity('allUsers');
-        $publicAcl->setRole('READER');
-        $this->service->objectAccessControls->insert($this->bucket, $path, $publicAcl);
-    }
-
-    /**
-     * Removes a `READER` role for entity `allUsers` from the object if present.
-     *
-     * @param string $path
-     */
-    protected function unPublishObject($path)
-    {
-        $controls = $this->service->objectAccessControls->listObjectAccessControls($this->bucket, $path);
-        // Cycle through existent entries in the ACL and only delete the `allUsers` entry if it is set to `allUsers`
-        foreach ($controls->getItems() as $control) {
-            if ($this->isPublicAccessControl($control)) {
-                $this->service->objectAccessControls->delete($this->bucket, $path, 'allUsers');
-                break;
-            }
-        }
-    }
-
-    /**
-     * Checks whether the given Access Control List entry marks the object
-     * as published.
-     *
-     * By default that is the case when the special entity 'allUsers' has
-     * the role 'READER'.
-     *
-     * @param \Google_Service_Storage_ObjectAccessControl $control
-     *
-     * @return bool
-     */
-    protected function isPublicAccessControl($control)
-    {
-        return $control['role'] === 'READER' && $control['entity'] === 'allUsers';
+        return $visibility === AdapterInterface::VISIBILITY_PUBLIC ? 'publicRead' : 'projectPrivate';
     }
 }
