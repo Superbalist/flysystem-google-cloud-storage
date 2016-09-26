@@ -57,8 +57,3 @@ $adapter = new GoogleStorageAdapter($storageClient, $bucket);
 
 $filesystem = new Filesystem($adapter);
 ```
-
-
-## TODO
-
-* Unit tests to be written

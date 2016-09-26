@@ -57,7 +57,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      *
      * @return \Google\Cloud\Storage\Bucket
      */
-    protected function getBucket()
+    public function getBucket()
     {
         return $this->bucket;
     }
@@ -80,6 +80,8 @@ class GoogleStorageAdapter extends AbstractAdapter
 
     /**
      * {@inheritdoc}
+     *
+     * @codeCoverageIgnore
      */
     public function update($path, $contents, Config $config)
     {
@@ -88,6 +90,8 @@ class GoogleStorageAdapter extends AbstractAdapter
 
     /**
      * {@inheritdoc}
+     *
+     * @codeCoverageIgnore
      */
     public function updateStream($path, $resource, Config $config)
     {
