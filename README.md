@@ -15,6 +15,12 @@ A Google Cloud Storage adapter for [flysystem](https://github.com/thephpleague/f
 composer require superbalist/flysystem-google-storage
 ```
 
+## Integrations
+
+Want to get started quickly? Check out some of these integrations:
+
+* Laravel - https://github.com/Superbalist/laravel-google-cloud-storage
+
 ## Usage
 
 ```php
