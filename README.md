@@ -1,4 +1,4 @@
-# flysystem-google-storage
+# flysystem-google-cloud-storage
 
 A Google Cloud Storage adapter for [flysystem](https://github.com/thephpleague/flysystem) - a PHP filesystem abstraction.
 
