@@ -1,4 +1,6 @@
-# Flysystem Adapter for Google Cloud Storage
+# flysystem-google-storage
+
+A Google Cloud Storage adapter for [flysystem](https://github.com/thephpleague/flysystem) - a PHP filesystem abstraction.
 
 [![Author](http://img.shields.io/badge/author-@superbalist-blue.svg?style=flat-square)](https://twitter.com/superbalist)
 [![Build Status](https://img.shields.io/travis/Superbalist/flysystem-google-storage/master.svg?style=flat-square)](https://travis-ci.org/Superbalist/flysystem-google-storage)
@@ -56,4 +58,30 @@ $bucket = $storageClient->bucket('your-bucket-name');
 $adapter = new GoogleStorageAdapter($storageClient, $bucket);
 
 $filesystem = new Filesystem($adapter);
+
+// write a file
+$filesystem->write('path/to/file.txt', 'contents');
+
+// update a file
+$filesystem->update('path/to/file.txt', 'new contents');
+
+// read a file
+$contents = $filesystem->read('path/to/file.txt');
+
+// check if a file exists
+$exists = $filesystem->has('path/to/file.txt');
+
+// delete a file
+$filesystem->delete('path/to/file.txt');
+
+// rename a file
+$filesystem->rename('filename.txt', 'newname.txt');
+
+// copy a file
+$filesystem->copy('filename.txt', 'duplicate.txt');
+
+// delete a directory
+$filesystem->deleteDir('path/to/directory');
+
+// see http://flysystem.thephpleague.com/api/ for full list of available functionality
 ```
