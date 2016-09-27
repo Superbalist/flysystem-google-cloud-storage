@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.1 - 2016-0-27
+
+* Add `getUrl($path)` method for Laravel 5.3 Filesystem to hook into
+
 ## 3.0.0 - 2016-09-26
 
 * Switch to google/cloud package

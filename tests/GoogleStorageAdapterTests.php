@@ -840,4 +840,38 @@ class GoogleStorageTests extends \PHPUnit_Framework_TestCase
         $visibility = $adapter->getVisibility('file.txt');
         $this->assertEquals(['visibility' => AdapterInterface::VISIBILITY_PUBLIC], $visibility);
     }
+
+    public function testSetGetStorageApiUri()
+    {
+        $storageClient = Mockery::mock(StorageClient::class);
+        $bucket = Mockery::mock(Bucket::class);
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket);
+
+        $this->assertEquals('http://storage.googleapis.com', $adapter->getStorageApiUri());
+
+        $adapter->setStorageApiUri('http://my.custom.domain.com');
+        $this->assertEquals('http://my.custom.domain.com', $adapter->getStorageApiUri());
+
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket, null, 'http://this.is.my.base.com');
+        $this->assertEquals('http://this.is.my.base.com', $adapter->getStorageApiUri());
+    }
+
+    public function testGetUrl()
+    {
+        $storageClient = Mockery::mock(StorageClient::class);
+
+        $bucket = Mockery::mock(Bucket::class);
+        $bucket->shouldReceive('name')
+            ->andReturn('my-bucket');
+
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket);
+        $this->assertEquals('http://storage.googleapis.com/my-bucket/file.txt', $adapter->getUrl('file.txt'));
+
+        $adapter->setPathPrefix('prefix');
+        $this->assertEquals('http://storage.googleapis.com/my-bucket/prefix/file.txt', $adapter->getUrl('file.txt'));
+
+        $adapter->setStorageApiUri('http://my-domain.com/');
+        $adapter->setPathPrefix('another-prefix');
+        $this->assertEquals('http://my-domain.com/my-bucket/another-prefix/dir/file.txt', $adapter->getUrl('dir/file.txt'));
+    }
 }

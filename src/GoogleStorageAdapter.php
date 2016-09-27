@@ -28,17 +28,27 @@ class GoogleStorageAdapter extends AbstractAdapter
     protected $bucket;
 
     /**
+     * @var string
+     */
+    protected $storageApiUri = 'http://storage.googleapis.com';
+
+    /**
      * @param StorageClient $storageClient
      * @param Bucket $bucket
      * @param string $pathPrefix
+     * @param string $storageApiUri
      */
-    public function __construct(StorageClient $storageClient, Bucket $bucket, $pathPrefix = null)
+    public function __construct(StorageClient $storageClient, Bucket $bucket, $pathPrefix = null, $storageApiUri = null)
     {
         $this->storageClient = $storageClient;
         $this->bucket = $bucket;
 
         if ($pathPrefix) {
             $this->setPathPrefix($pathPrefix);
+        }
+
+        if ($storageApiUri) {
+            $this->storageApiUri = $storageApiUri;
         }
     }
 
@@ -60,6 +70,27 @@ class GoogleStorageAdapter extends AbstractAdapter
     public function getBucket()
     {
         return $this->bucket;
+    }
+
+    /**
+     * Set the storage api uri.
+     *
+     * @param string $uri
+     */
+    public function setStorageApiUri($uri)
+    {
+        $this->storageApiUri = $uri;
+    }
+
+    /**
+     * Return the storage api uri.
+     *
+     * @param string $uri
+     * @return string
+     */
+    public function getStorageApiUri()
+    {
+        return $this->storageApiUri;
     }
 
     /**
@@ -332,6 +363,21 @@ class GoogleStorageAdapter extends AbstractAdapter
         return [
             'visibility' => $this->getRawVisibility($path)
         ];
+    }
+
+    /**
+     * Return a public url to a file.
+     *
+     * Note: The file must have `AdapterInterface::VISIBILITY_PUBLIC` visibility.
+     *
+     * @param string $path
+     * @return string
+     */
+    public function getUrl($path)
+    {
+        $uri = rtrim($this->storageApiUri, '/');
+        $path = $this->applyPathPrefix($path);
+        return $uri . '/' . $this->bucket->name() . '/' . $path;
     }
 
     /**
