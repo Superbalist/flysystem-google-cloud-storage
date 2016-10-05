@@ -2,7 +2,7 @@
 
 ## 3.0.3 - 2016-10-05
 
-* Fix visibility setting not using fallback config
+* Fix visibility setting not using fallback config (@cristianobaptista)
 
 ## 3.0.2 - 2016-09-27
 
