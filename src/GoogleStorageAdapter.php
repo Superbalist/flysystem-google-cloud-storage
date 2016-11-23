@@ -30,7 +30,7 @@ class GoogleStorageAdapter extends AbstractAdapter
     /**
      * @var string
      */
-    protected $storageApiUri = 'http://storage.googleapis.com';
+    protected $storageApiUri = 'https://storage.googleapis.com';
 
     /**
      * @param StorageClient $storageClient

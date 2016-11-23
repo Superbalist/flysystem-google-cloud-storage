@@ -847,7 +847,7 @@ class GoogleStorageTests extends \PHPUnit_Framework_TestCase
         $bucket = Mockery::mock(Bucket::class);
         $adapter = new GoogleStorageAdapter($storageClient, $bucket);
 
-        $this->assertEquals('http://storage.googleapis.com', $adapter->getStorageApiUri());
+        $this->assertEquals('https://storage.googleapis.com', $adapter->getStorageApiUri());
 
         $adapter->setStorageApiUri('http://my.custom.domain.com');
         $this->assertEquals('http://my.custom.domain.com', $adapter->getStorageApiUri());
@@ -865,10 +865,10 @@ class GoogleStorageTests extends \PHPUnit_Framework_TestCase
             ->andReturn('my-bucket');
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket);
-        $this->assertEquals('http://storage.googleapis.com/my-bucket/file.txt', $adapter->getUrl('file.txt'));
+        $this->assertEquals('https://storage.googleapis.com/my-bucket/file.txt', $adapter->getUrl('file.txt'));
 
         $adapter->setPathPrefix('prefix');
-        $this->assertEquals('http://storage.googleapis.com/my-bucket/prefix/file.txt', $adapter->getUrl('file.txt'));
+        $this->assertEquals('https://storage.googleapis.com/my-bucket/prefix/file.txt', $adapter->getUrl('file.txt'));
 
         $adapter->setStorageApiUri('http://my-domain.com/');
         $adapter->setPathPrefix('another-prefix');
