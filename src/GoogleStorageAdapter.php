@@ -28,6 +28,11 @@ class GoogleStorageAdapter extends AbstractAdapter
     protected $bucket;
 
     /**
+     * @var array
+     */
+    protected $auth = [];
+
+    /**
      * @var string
      */
     protected $storageApiUri = 'https://storage.googleapis.com';
@@ -38,7 +43,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      * @param string $pathPrefix
      * @param string $storageApiUri
      */
-    public function __construct(StorageClient $storageClient, Bucket $bucket, $pathPrefix = null, $storageApiUri = null)
+    public function __construct(StorageClient $storageClient, Bucket $bucket, $key_file_path = '', $pathPrefix = null, $storageApiUri = null)
     {
         $this->storageClient = $storageClient;
         $this->bucket = $bucket;
@@ -49,6 +54,12 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         if ($storageApiUri) {
             $this->storageApiUri = $storageApiUri;
+        }
+
+        if (is_file($key_file_path)) {
+            if ($data = json_decode(file_get_contents($key_file_path), True)) {
+                $this->auth = $data;
+            }
         }
     }
 
@@ -378,6 +389,45 @@ class GoogleStorageAdapter extends AbstractAdapter
         $uri = rtrim($this->storageApiUri, '/');
         $path = $this->applyPathPrefix($path);
         return $uri . '/' . $this->bucket->name() . '/' . $path;
+    }
+
+    /**
+     * Return a signed url to a file with expiration timestamp.
+     *
+     * @param string $path
+     * @param integer $expires
+     * @param string $method
+     * @return string
+     */
+    public function getSignedUrl($path, $expires = 0, $method = 'GET')
+    {
+        if (!empty($this->auth)) {
+            $signature = '';
+            $canonical_resource = '/' . $this->bucket->name() . '/' . $path; // e.g.: /bucket/somefile.txt
+
+            $to_sign = [
+                $method,
+                '',
+                '',
+                $expires,
+                $canonical_resource
+            ];
+
+            $to_sign_string = implode("\n", $to_sign);
+
+            // sign $to_sign_string as $signature with private_key from provided
+            openssl_sign($to_sign_string, $signature, $this->auth['private_key'], 'sha256');
+
+            $signature = urlencode(base64_encode($signature));
+
+            return $this->getStorageApiUri()
+            . $canonical_resource
+            . "?GoogleAccessId=" . urlencode($this->auth['client_email'])
+            . "&Expires=" . $expires
+            . "&Signature=" . $signature;
+        }
+
+        return $this->getUrl($path);
     }
 
     /**
