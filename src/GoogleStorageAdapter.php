@@ -43,7 +43,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      * @param string $pathPrefix
      * @param string $storageApiUri
      */
-    public function __construct(StorageClient $storageClient, Bucket $bucket, $key_file_path = '', $pathPrefix = null, $storageApiUri = null)
+    public function __construct(StorageClient $storageClient, Bucket $bucket, $pathPrefix = null, $storageApiUri = null, $key_file_path = '')
     {
         $this->storageClient = $storageClient;
         $this->bucket = $bucket;
