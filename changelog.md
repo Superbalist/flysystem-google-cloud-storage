@@ -3,6 +3,7 @@
 ## 3.0.4 - 2017-01-03
 
 * Allow for google/cloud ^0.10.0|^0.11.0|^0.12.0|^0.13.0
+* Use https in generated urls to storage bucket objects (@jorisvaesen)
 
 ## 3.0.3 - 2016-10-05
 
