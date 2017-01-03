@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.0.0 - 2017-01-03
+
+* Add support for reading from streams (implemented in google/cloud 0.10.2)
+
 ## 3.0.4 - 2017-01-03
 
 * Allow for google/cloud ^0.10.0|^0.11.0|^0.12.0|^0.13.0
