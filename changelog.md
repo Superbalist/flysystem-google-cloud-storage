@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.4 - 2017-01-03
+
+* Allow for google/cloud ^0.10.0|^0.11.0|^0.12.0|^0.13.0
+
 ## 3.0.3 - 2016-10-05
 
 * Fix visibility setting not using fallback config (@cristianobaptista)
