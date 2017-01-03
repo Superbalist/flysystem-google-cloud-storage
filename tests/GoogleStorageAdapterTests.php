@@ -9,6 +9,7 @@ use Google\Cloud\Storage\StorageObject;
 use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
 use Mockery;
+use Psr\Http\Message\StreamInterface;
 use Superbalist\Flysystem\GoogleStorage\GoogleStorageAdapter;
 
 class GoogleStorageTests extends \PHPUnit_Framework_TestCase
@@ -512,6 +513,41 @@ class GoogleStorageTests extends \PHPUnit_Framework_TestCase
 
         $this->assertArrayHasKey('contents', $data);
         $this->assertEquals('This is the file contents.', $data['contents']);
+    }
+
+    public function testReadStream()
+    {
+        $storageClient = Mockery::mock(StorageClient::class);
+        $bucket = Mockery::mock(Bucket::class);
+
+        $stream = Mockery::mock(StreamInterface::class);
+
+        $storageObject = Mockery::mock(StorageObject::class);
+        $storageObject->shouldReceive('downloadAsStream')
+            ->once()
+            ->andReturn($stream);
+        $storageObject->shouldReceive('name')
+            ->once()
+            ->andReturn('prefix/file.txt');
+        $storageObject->shouldReceive('info')
+            ->once()
+            ->andReturn([
+                'updated' => '2016-09-26T14:44:42+00:00',
+                'contentType' => 'text/plain',
+                'size' => 5,
+            ]);
+
+        $bucket->shouldReceive('object')
+            ->with('prefix/file.txt')
+            ->once()
+            ->andReturn($storageObject);
+
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
+
+        $data = $adapter->readStream('file.txt');
+
+        $this->assertArrayHasKey('stream', $data);
+        $this->assertInstanceOf(StreamInterface::class, $data['stream']);
     }
 
     public function testListContents()

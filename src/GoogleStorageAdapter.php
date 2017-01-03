@@ -7,7 +7,6 @@ use Google\Cloud\Storage\Acl;
 use Google\Cloud\Storage\Bucket;
 use Google\Cloud\Storage\StorageClient;
 use Google\Cloud\Storage\StorageObject;
-use League\Flysystem\Adapter\Polyfill\StreamedReadingTrait;
 use League\Flysystem\AdapterInterface;
 use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\Config;
@@ -15,8 +14,6 @@ use League\Flysystem\Util;
 
 class GoogleStorageAdapter extends AbstractAdapter
 {
-    use StreamedReadingTrait;
-
     /**
      * @var StorageClient
      */
@@ -301,6 +298,19 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         $data = $this->normaliseObject($object);
         $data['contents'] = $contents;
+
+        return $data;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function readStream($path)
+    {
+        $object = $this->getObject($path);
+
+        $data = $this->normaliseObject($object);
+        $data['stream'] = $object->downloadAsStream();
 
         return $data;
     }
