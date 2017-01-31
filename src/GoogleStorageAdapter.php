@@ -143,6 +143,10 @@ class GoogleStorageAdapter extends AbstractAdapter
             // we therefore default to private
             $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(AdapterInterface::VISIBILITY_PRIVATE);
         }
+        
+        if ($metadata = $config->get('metadata')) {
+            $options['metadata'] = $metadata;
+        }
 
         return $options;
     }
