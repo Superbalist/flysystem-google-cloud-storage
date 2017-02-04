@@ -12,16 +12,16 @@ use Mockery;
 use Psr\Http\Message\StreamInterface;
 use Superbalist\Flysystem\GoogleStorage\GoogleStorageAdapter;
 
-class GoogleStorageTests extends \PHPUnit_Framework_TestCase
+class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 {
-	public function testGetStorageClient()
-	{
-	    $storageClient = Mockery::mock(StorageClient::class);
+    public function testGetStorageClient()
+    {
+        $storageClient = Mockery::mock(StorageClient::class);
         $bucket = Mockery::mock(Bucket::class);
         $adapter = new GoogleStorageAdapter($storageClient, $bucket);
 
         $this->assertSame($storageClient, $adapter->getStorageClient());
-	}
+    }
 
     public function testGetBucket()
     {
@@ -54,7 +54,7 @@ class GoogleStorageTests extends \PHPUnit_Framework_TestCase
                 [
                     'name' => 'prefix/file1.txt',
                     'predefinedAcl' => 'projectPrivate',
-                ]
+                ],
             ])
             ->once()
             ->andReturn($storageObject);
@@ -98,7 +98,7 @@ class GoogleStorageTests extends \PHPUnit_Framework_TestCase
                 [
                     'name' => 'prefix/file1.txt',
                     'predefinedAcl' => 'projectPrivate',
-                ]
+                ],
             ])
             ->once()
             ->andReturn($storageObject);
@@ -142,7 +142,7 @@ class GoogleStorageTests extends \PHPUnit_Framework_TestCase
                 [
                     'name' => 'prefix/file1.txt',
                     'predefinedAcl' => 'publicRead',
-                ]
+                ],
             ])
             ->once()
             ->andReturn($storageObject);
@@ -188,7 +188,7 @@ class GoogleStorageTests extends \PHPUnit_Framework_TestCase
                 [
                     'name' => 'prefix/file1.txt',
                     'predefinedAcl' => 'projectPrivate',
-                ]
+                ],
             ])
             ->once()
             ->andReturn($storageObject);
