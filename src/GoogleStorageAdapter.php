@@ -7,8 +7,8 @@ use Google\Cloud\Storage\Acl;
 use Google\Cloud\Storage\Bucket;
 use Google\Cloud\Storage\StorageClient;
 use Google\Cloud\Storage\StorageObject;
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\Adapter\AbstractAdapter;
+use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
 use League\Flysystem\Util;
 
@@ -83,6 +83,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      * Return the storage api uri.
      *
      * @param string $uri
+     *
      * @return string
      */
     public function getStorageApiUri()
@@ -130,6 +131,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      * Returns an array of options from the config.
      *
      * @param Config $config
+     *
      * @return array
      */
     protected function getOptionsFromConfig(Config $config)
@@ -143,7 +145,7 @@ class GoogleStorageAdapter extends AbstractAdapter
             // we therefore default to private
             $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(AdapterInterface::VISIBILITY_PRIVATE);
         }
-        
+
         if ($metadata = $config->get('metadata')) {
             $options['metadata'] = $metadata;
         }
@@ -157,6 +159,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      * @param string $path
      * @param string|resource $contents
      * @param Config $config
+     *
      * @return array
      */
     protected function upload($path, $contents, Config $config)
@@ -175,6 +178,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      * Returns a dictionary of object metadata from an object.
      *
      * @param StorageObject $object
+     *
      * @return array
      */
     protected function normaliseObject(StorageObject $object)
@@ -258,6 +262,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      * Returns a normalised directory name from the given path.
      *
      * @param string $dirname
+     *
      * @return string
      */
     protected function normaliseDirName($dirname)
@@ -274,7 +279,7 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         if ($visibility === AdapterInterface::VISIBILITY_PRIVATE) {
             $object->acl()->delete('allUsers');
-        } else if ($visibility === AdapterInterface::VISIBILITY_PUBLIC) {
+        } elseif ($visibility === AdapterInterface::VISIBILITY_PUBLIC) {
             $object->acl()->add('allUsers', Acl::ROLE_READER);
         }
 
@@ -375,7 +380,7 @@ class GoogleStorageAdapter extends AbstractAdapter
     public function getVisibility($path)
     {
         return [
-            'visibility' => $this->getRawVisibility($path)
+            'visibility' => $this->getRawVisibility($path),
         ];
     }
 
@@ -385,6 +390,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      * Note: The file must have `AdapterInterface::VISIBILITY_PUBLIC` visibility.
      *
      * @param string $path
+     *
      * @return string
      */
     public function getUrl($path)
@@ -396,6 +402,7 @@ class GoogleStorageAdapter extends AbstractAdapter
 
     /**
      * @param string $path
+     *
      * @return string
      */
     protected function getRawVisibility($path)
@@ -415,6 +422,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      * Returns a storage object for the given path.
      *
      * @param string $path
+     *
      * @return \Google\Cloud\Storage\StorageObject
      */
     protected function getObject($path)
@@ -425,6 +433,7 @@ class GoogleStorageAdapter extends AbstractAdapter
 
     /**
      * @param string $visibility
+     *
      * @return string
      */
     protected function getPredefinedAclForVisibility($visibility)
