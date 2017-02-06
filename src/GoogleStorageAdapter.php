@@ -196,7 +196,7 @@ class GoogleStorageAdapter extends AbstractAdapter
             'dirname' => Util::dirname($name),
             'path' => $name,
             'timestamp' => strtotime($info['updated']),
-            'mimetype' => $info['contentType'],
+            'mimetype' => isset($info['contentType']) ? $info['contentType'] : '',
             'size' => $info['size'],
         ];
     }
