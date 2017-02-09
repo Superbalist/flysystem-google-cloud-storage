@@ -607,6 +607,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
     /**
      * @param  string  $prefix
+     *
      * @return array
      */
     protected function getMockDirObjects($prefix = '')
