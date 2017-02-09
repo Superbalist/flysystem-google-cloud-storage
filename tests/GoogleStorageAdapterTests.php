@@ -606,6 +606,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @param  string  $prefix
      * @return array
      */
     protected function getMockDirObjects($prefix = '')
@@ -613,7 +614,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $dir1 = Mockery::mock(StorageObject::class);
         $dir1->shouldReceive('name')
             ->once()
-            ->andReturn($prefix.'directory1/');
+            ->andReturn($prefix . 'directory1/');
         $dir1->shouldReceive('info')
             ->once()
             ->andReturn([
@@ -625,7 +626,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $dir1file1 = Mockery::mock(StorageObject::class);
         $dir1file1->shouldReceive('name')
             ->once()
-            ->andReturn($prefix.'directory1/file1.txt');
+            ->andReturn($prefix . 'directory1/file1.txt');
         $dir1file1->shouldReceive('info')
             ->once()
             ->andReturn([
@@ -637,7 +638,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $dir2file1 = Mockery::mock(StorageObject::class);
         $dir2file1->shouldReceive('name')
             ->once()
-            ->andReturn($prefix.'directory2/file1.txt');
+            ->andReturn($prefix . 'directory2/file1.txt');
         $dir2file1->shouldReceive('info')
             ->once()
             ->andReturn([
