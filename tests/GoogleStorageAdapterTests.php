@@ -67,8 +67,8 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $expected = [
             'type' => 'file',
-            'dirname' => 'prefix',
-            'path' => 'prefix/file1.txt',
+            'dirname' => '',
+            'path' => 'file1.txt',
             'timestamp' => 1474901082,
             'mimetype' => 'text/plain',
             'size' => 5,
@@ -111,8 +111,8 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $expected = [
             'type' => 'file',
-            'dirname' => 'prefix',
-            'path' => 'prefix/file1.txt',
+            'dirname' => '',
+            'path' => 'file1.txt',
             'timestamp' => 1474901082,
             'mimetype' => 'text/plain',
             'size' => 5,
@@ -155,8 +155,8 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $expected = [
             'type' => 'file',
-            'dirname' => 'prefix',
-            'path' => 'prefix/file1.txt',
+            'dirname' => '',
+            'path' => 'file1.txt',
             'timestamp' => 1474901082,
             'mimetype' => 'text/plain',
             'size' => 5,
@@ -203,8 +203,8 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $expected = [
             'type' => 'file',
-            'dirname' => 'prefix',
-            'path' => 'prefix/file1.txt',
+            'dirname' => '',
+            'path' => 'file1.txt',
             'timestamp' => 1474901082,
             'mimetype' => 'text/plain',
             'size' => 5,
@@ -555,12 +555,14 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageClient = Mockery::mock(StorageClient::class);
         $bucket = Mockery::mock(Bucket::class);
 
+        $prefix = 'prefix/';
+
         $bucket->shouldReceive('objects')
             ->once()
             ->with([
-                'prefix' => 'prefix/',
+                'prefix' => $prefix,
             ])
-            ->andReturn($this->getMockDirObjects());
+            ->andReturn($this->getMockDirObjects($prefix));
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
@@ -606,12 +608,12 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
     /**
      * @return array
      */
-    protected function getMockDirObjects()
+    protected function getMockDirObjects($prefix = '')
     {
         $dir1 = Mockery::mock(StorageObject::class);
         $dir1->shouldReceive('name')
             ->once()
-            ->andReturn('directory1/');
+            ->andReturn($prefix.'directory1/');
         $dir1->shouldReceive('info')
             ->once()
             ->andReturn([
@@ -623,7 +625,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $dir1file1 = Mockery::mock(StorageObject::class);
         $dir1file1->shouldReceive('name')
             ->once()
-            ->andReturn('directory1/file1.txt');
+            ->andReturn($prefix.'directory1/file1.txt');
         $dir1file1->shouldReceive('info')
             ->once()
             ->andReturn([
@@ -635,7 +637,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $dir2file1 = Mockery::mock(StorageObject::class);
         $dir2file1->shouldReceive('name')
             ->once()
-            ->andReturn('directory2/file1.txt');
+            ->andReturn($prefix.'directory2/file1.txt');
         $dir2file1->shouldReceive('info')
             ->once()
             ->andReturn([
@@ -679,8 +681,8 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $expected = [
             'type' => 'file',
-            'dirname' => 'prefix',
-            'path' => 'prefix/file.txt',
+            'dirname' => '',
+            'path' => 'file.txt',
             'timestamp' => 1474901082,
             'mimetype' => 'text/plain',
             'size' => 5,
@@ -717,8 +719,8 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $expected = [
             'type' => 'dir',
-            'dirname' => 'prefix',
-            'path' => 'prefix/directory',
+            'dirname' => '',
+            'path' => 'directory',
             'timestamp' => 1474901082,
             'mimetype' => 'application/octet-stream',
             'size' => 0,
