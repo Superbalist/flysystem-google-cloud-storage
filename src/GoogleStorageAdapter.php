@@ -183,7 +183,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     protected function normaliseObject(StorageObject $object)
     {
-        $name = $object->name();
+        $name = $this->removePathPrefix($object->name());
         $info = $object->info();
 
         $isDir = substr($name, -1) === '/';
