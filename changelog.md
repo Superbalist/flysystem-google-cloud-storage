@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.0.2 - 2017-02-10
+
+* Allow metadata to be passed as a config option for file uploads (@MikeyVelt)
+* Fix 'undefined index' bug when objects come back with no contentType
+* Remove path prefix, if any, from object dirname and path when normalising objects (@andris-sevcenko)
+
 ## 4.0.1 - 2017-01-03
 
 * Allow for google/cloud ^0.20.0
