@@ -7,6 +7,7 @@ use Google\Cloud\Storage\Acl;
 use Google\Cloud\Storage\Bucket;
 use Google\Cloud\Storage\StorageClient;
 use Google\Cloud\Storage\StorageObject;
+use GuzzleHttp\Psr7\StreamWrapper;
 use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
@@ -319,7 +320,7 @@ class GoogleStorageAdapter extends AbstractAdapter
         $object = $this->getObject($path);
 
         $data = $this->normaliseObject($object);
-        $data['stream'] = $object->downloadAsStream();
+        $data['stream'] = StreamWrapper::getResource($object->downloadAsStream());
 
         return $data;
     }
