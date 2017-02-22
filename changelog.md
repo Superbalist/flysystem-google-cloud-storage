@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.0 - ?
+
+* Fix to readStream incorrectly returning a `StreamInterface` instead of a `resource` (@andris-sevcenko)
+
 ## 4.0.2 - 2017-02-10
 
 * Allow metadata to be passed as a config option for file uploads (@MikeyVelt)
