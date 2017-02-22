@@ -521,6 +521,12 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $bucket = Mockery::mock(Bucket::class);
 
         $stream = Mockery::mock(StreamInterface::class);
+        $stream->shouldReceive('isReadable')
+            ->once()
+            ->andReturn(true);
+        $stream->shouldReceive('isWritable')
+            ->once()
+            ->andReturn(false);
 
         $storageObject = Mockery::mock(StorageObject::class);
         $storageObject->shouldReceive('downloadAsStream')
@@ -547,7 +553,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $data = $adapter->readStream('file.txt');
 
         $this->assertArrayHasKey('stream', $data);
-        $this->assertInstanceOf(StreamInterface::class, $data['stream']);
+        $this->assertInternalType('resource', $data['stream']);
     }
 
     public function testListContents()
