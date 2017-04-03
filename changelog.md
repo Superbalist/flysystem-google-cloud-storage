@@ -1,6 +1,6 @@
 # Changelog
 
-## 5.0.0 - ?
+## 5.0.0 - 2017-04-03
 
 * Fix to readStream incorrectly returning a `StreamInterface` instead of a `resource` (@andris-sevcenko)
 
