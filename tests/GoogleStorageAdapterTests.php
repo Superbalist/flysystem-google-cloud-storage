@@ -222,15 +222,15 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
             ->andReturn([
                 [
                     'entity' => 'should-not-change',
-                    'role'   => Acl::ROLE_OWNER,
+                    'role' => Acl::ROLE_OWNER,
                 ],
                 [
                     'entity' => 'should-be-added',
-                    'role'   => Acl::ROLE_OWNER,
+                    'role' => Acl::ROLE_OWNER,
                 ],
                 [
                     'entity' => 'should-be-updated',
-                    'role'   => Acl::ROLE_OWNER,
+                    'role' => Acl::ROLE_OWNER,
                 ],
             ]);
 
@@ -241,15 +241,15 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
             ->andReturn([
                 [
                     'entity' => 'should-not-change',
-                    'role'   => Acl::ROLE_OWNER,
+                    'role' => Acl::ROLE_OWNER,
                 ],
                 [
                     'entity' => 'should-be-deleted',
-                    'role'   => Acl::ROLE_OWNER,
+                    'role' => Acl::ROLE_OWNER,
                 ],
                 [
                     'entity' => 'should-be-updated',
-                    'role'   => Acl::ROLE_READER,
+                    'role' => Acl::ROLE_READER,
                 ],
             ]);
         $newStorageObjectAcl->shouldReceive('delete')
@@ -310,15 +310,15 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
             ->andReturn([
                 [
                     'entity' => 'should-not-change',
-                    'role'   => Acl::ROLE_OWNER,
+                    'role' => Acl::ROLE_OWNER,
                 ],
                 [
                     'entity' => 'should-be-added',
-                    'role'   => Acl::ROLE_OWNER,
+                    'role' => Acl::ROLE_OWNER,
                 ],
                 [
                     'entity' => 'should-be-updated',
-                    'role'   => Acl::ROLE_OWNER,
+                    'role' => Acl::ROLE_OWNER,
                 ],
             ]);
 
@@ -329,15 +329,15 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
             ->andReturn([
                 [
                     'entity' => 'should-not-change',
-                    'role'   => Acl::ROLE_OWNER,
+                    'role' => Acl::ROLE_OWNER,
                 ],
                 [
                     'entity' => 'should-be-deleted',
-                    'role'   => Acl::ROLE_OWNER,
+                    'role' => Acl::ROLE_OWNER,
                 ],
                 [
                     'entity' => 'should-be-updated',
-                    'role'   => Acl::ROLE_READER,
+                    'role' => Acl::ROLE_READER,
                 ],
             ]);
         $newStorageObjectAcl->shouldReceive('delete')
