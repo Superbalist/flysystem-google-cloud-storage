@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Google\Cloud\Exception\NotFoundException;
 use Google\Cloud\Storage\Acl;
 use Google\Cloud\Storage\Bucket;
 use Google\Cloud\Storage\StorageClient;
@@ -53,7 +54,6 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'This is the file contents.',
                 [
                     'name' => 'prefix/file1.txt',
-                    'predefinedAcl' => 'projectPrivate',
                 ],
             ])
             ->once()
@@ -187,7 +187,6 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 $stream,
                 [
                     'name' => 'prefix/file1.txt',
-                    'predefinedAcl' => 'projectPrivate',
                 ],
             ])
             ->once()
@@ -218,31 +217,79 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $oldStorageObjectAcl = Mockery::mock(Acl::class);
         $oldStorageObjectAcl->shouldReceive('get')
-            ->with(['entity' => 'allUsers'])
+            ->withNoArgs()
             ->once()
             ->andReturn([
-                'role' => Acl::ROLE_OWNER,
+                [
+                    'entity' => 'should-not-change',
+                    'role'   => Acl::ROLE_OWNER,
+                ],
+                [
+                    'entity' => 'should-be-added',
+                    'role'   => Acl::ROLE_OWNER,
+                ],
+                [
+                    'entity' => 'should-be-updated',
+                    'role'   => Acl::ROLE_OWNER,
+                ],
             ]);
+
+        $newStorageObjectAcl = Mockery::mock(Acl::class);
+        $newStorageObjectAcl->shouldReceive('get')
+            ->withNoArgs()
+            ->once()
+            ->andReturn([
+                [
+                    'entity' => 'should-not-change',
+                    'role'   => Acl::ROLE_OWNER,
+                ],
+                [
+                    'entity' => 'should-be-deleted',
+                    'role'   => Acl::ROLE_OWNER,
+                ],
+                [
+                    'entity' => 'should-be-updated',
+                    'role'   => Acl::ROLE_READER,
+                ],
+            ]);
+        $newStorageObjectAcl->shouldReceive('delete')
+            ->with('should-be-deleted')
+            ->once();
+        $newStorageObjectAcl->shouldReceive('add')
+            ->with('should-be-added', Acl::ROLE_OWNER)
+            ->once();
+        $newStorageObjectAcl->shouldReceive('update')
+            ->with('should-be-updated', Acl::ROLE_OWNER)
+            ->once();
+
+        $newStorageObject = Mockery::mock(StorageObject::class);
+        $newStorageObject->shouldReceive('acl')
+            ->withNoArgs()
+            ->times(4)
+            ->andReturn($newStorageObjectAcl);
 
         $oldStorageObject = Mockery::mock(StorageObject::class);
         $oldStorageObject->shouldReceive('acl')
+            ->withNoArgs()
             ->once()
             ->andReturn($oldStorageObjectAcl);
+
         $oldStorageObject->shouldReceive('copy')
             ->withArgs([
                 $bucket,
                 [
                     'name' => 'prefix/new_file.txt',
-                    'predefinedAcl' => 'projectPrivate',
                 ],
             ])
-            ->once();
+            ->once()
+            ->andReturn($newStorageObject);
+
         $oldStorageObject->shouldReceive('delete')
             ->once();
 
         $bucket->shouldReceive('object')
             ->with('prefix/old_file.txt')
-            ->times(3)
+            ->twice()
             ->andReturn($oldStorageObject);
 
         $storageClient = Mockery::mock(StorageClient::class);
@@ -258,69 +305,79 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $oldStorageObjectAcl = Mockery::mock(Acl::class);
         $oldStorageObjectAcl->shouldReceive('get')
-            ->with(['entity' => 'allUsers'])
+            ->withNoArgs()
             ->once()
             ->andReturn([
-                'role' => Acl::ROLE_OWNER,
+                [
+                    'entity' => 'should-not-change',
+                    'role'   => Acl::ROLE_OWNER,
+                ],
+                [
+                    'entity' => 'should-be-added',
+                    'role'   => Acl::ROLE_OWNER,
+                ],
+                [
+                    'entity' => 'should-be-updated',
+                    'role'   => Acl::ROLE_OWNER,
+                ],
             ]);
+
+        $newStorageObjectAcl = Mockery::mock(Acl::class);
+        $newStorageObjectAcl->shouldReceive('get')
+            ->withNoArgs()
+            ->once()
+            ->andReturn([
+                [
+                    'entity' => 'should-not-change',
+                    'role'   => Acl::ROLE_OWNER,
+                ],
+                [
+                    'entity' => 'should-be-deleted',
+                    'role'   => Acl::ROLE_OWNER,
+                ],
+                [
+                    'entity' => 'should-be-updated',
+                    'role'   => Acl::ROLE_READER,
+                ],
+            ]);
+        $newStorageObjectAcl->shouldReceive('delete')
+            ->with('should-be-deleted')
+            ->once();
+        $newStorageObjectAcl->shouldReceive('add')
+            ->with('should-be-added', Acl::ROLE_OWNER)
+            ->once();
+        $newStorageObjectAcl->shouldReceive('update')
+            ->with('should-be-updated', Acl::ROLE_OWNER)
+            ->once();
+
+        $newStorageObject = Mockery::mock(StorageObject::class);
+        $newStorageObject->shouldReceive('acl')
+            ->withNoArgs()
+            ->times(4)
+            ->andReturn($newStorageObjectAcl);
 
         $oldStorageObject = Mockery::mock(StorageObject::class);
         $oldStorageObject->shouldReceive('acl')
+            ->withNoArgs()
             ->once()
             ->andReturn($oldStorageObjectAcl);
+
         $oldStorageObject->shouldReceive('copy')
             ->withArgs([
                 $bucket,
                 [
                     'name' => 'prefix/new_file.txt',
-                    'predefinedAcl' => 'projectPrivate',
                 ],
             ])
-            ->once();
+            ->once()
+            ->andReturn($newStorageObject);
 
         $bucket->shouldReceive('object')
             ->with('prefix/old_file.txt')
-            ->times(2)
+            ->once()
             ->andReturn($oldStorageObject);
 
         $storageClient = Mockery::mock(StorageClient::class);
-
-        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
-
-        $adapter->copy('old_file.txt', 'new_file.txt');
-    }
-
-    public function testCopyWhenOriginalFileIsPublic()
-    {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
-
-        $oldStorageObjectAcl = Mockery::mock(Acl::class);
-        $oldStorageObjectAcl->shouldReceive('get')
-            ->with(['entity' => 'allUsers'])
-            ->once()
-            ->andReturn([
-                'role' => Acl::ROLE_READER,
-            ]);
-
-        $oldStorageObject = Mockery::mock(StorageObject::class);
-        $oldStorageObject->shouldReceive('acl')
-            ->once()
-            ->andReturn($oldStorageObjectAcl);
-        $oldStorageObject->shouldReceive('copy')
-            ->withArgs([
-                $bucket,
-                [
-                    'name' => 'prefix/new_file.txt',
-                    'predefinedAcl' => 'publicRead',
-                ],
-            ])
-            ->once();
-
-        $bucket->shouldReceive('object')
-            ->with('prefix/old_file.txt')
-            ->times(2)
-            ->andReturn($oldStorageObject);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
@@ -835,9 +892,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObjectAcl->shouldReceive('get')
             ->with(['entity' => 'allUsers'])
             ->once()
-            ->andReturn([
-                'role' => Acl::ROLE_OWNER,
-            ]);
+            ->andThrow(NotFoundException::class);
 
         $storageObject = Mockery::mock(StorageObject::class);
         $storageObject->shouldReceive('acl')
@@ -857,7 +912,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $this->assertEquals(['visibility' => AdapterInterface::VISIBILITY_PRIVATE], $visibility);
     }
 
-    public function testGetVisibilityWhenVisibilityIsPublic()
+    public function testGetVisibilityIsPublicWhenAllUsersIsReader()
     {
         $bucket = Mockery::mock(Bucket::class);
 
@@ -867,6 +922,36 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
             ->once()
             ->andReturn([
                 'role' => Acl::ROLE_READER,
+            ]);
+
+        $storageObject = Mockery::mock(StorageObject::class);
+        $storageObject->shouldReceive('acl')
+            ->once()
+            ->andReturn($storageObjectAcl);
+
+        $bucket->shouldReceive('object')
+            ->with('prefix/file.txt')
+            ->once()
+            ->andReturn($storageObject);
+
+        $storageClient = Mockery::mock(StorageClient::class);
+
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
+
+        $visibility = $adapter->getVisibility('file.txt');
+        $this->assertEquals(['visibility' => AdapterInterface::VISIBILITY_PUBLIC], $visibility);
+    }
+
+    public function testGetVisibilityIsPublicWhenAllUsersIsOwner()
+    {
+        $bucket = Mockery::mock(Bucket::class);
+
+        $storageObjectAcl = Mockery::mock(Acl::class);
+        $storageObjectAcl->shouldReceive('get')
+            ->with(['entity' => 'allUsers'])
+            ->once()
+            ->andReturn([
+                'role' => Acl::ROLE_OWNER,
             ]);
 
         $storageObject = Mockery::mock(StorageObject::class);

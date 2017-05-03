@@ -250,7 +250,7 @@ class GoogleStorageAdapter extends AbstractAdapter
             if (!isset($newAcl[$entity])) {
                 $newObject->acl()->add($entity, $role);
             } elseif ($newAcl[$entity] != $role) {
-                $newAcl->acl()->update($entity, $role);
+                $newObject->acl()->update($entity, $role);
             }
         }
 
