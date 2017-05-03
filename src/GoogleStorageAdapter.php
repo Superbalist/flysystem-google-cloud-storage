@@ -214,6 +214,7 @@ class GoogleStorageAdapter extends AbstractAdapter
      * Simplifies an array of ACL objects to an array of entity => role.
      *
      * @param array $acl
+     *
      * @return array
      */
     protected function simplifyAcl($acl)
