@@ -141,10 +141,6 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         if ($visibility = $config->get('visibility')) {
             $options['predefinedAcl'] = $this->getPredefinedAclForVisibility($visibility);
-        } else {
-            // if a file is created without an acl, it isn't accessible via the console
-            // we therefore default to private
-            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(AdapterInterface::VISIBILITY_PRIVATE);
         }
 
         if ($metadata = $config->get('metadata')) {
@@ -215,20 +211,48 @@ class GoogleStorageAdapter extends AbstractAdapter
     }
 
     /**
+     * Simplifies an array of ACL objects to an array of entity => role.
+     *
+     * @param array $acl
+     * @return array
+     */
+    protected function simplifyAcl($acl)
+    {
+        return array_combine(array_column($acl, 'entity'), array_column($acl, 'role'));
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function copy($path, $newpath)
     {
         $newpath = $this->applyPathPrefix($newpath);
 
-        // we want the new file to have the same visibility as the original file
-        $visibility = $this->getRawVisibility($path);
+        $originalObject = $this->getObject($path);
+        $originalAcl = $this->simplifyAcl($originalObject->acl()->get());
 
         $options = [
             'name' => $newpath,
-            'predefinedAcl' => $this->getPredefinedAclForVisibility($visibility),
         ];
-        $this->getObject($path)->copy($this->bucket, $options);
+        $newObject = $originalObject->copy($this->bucket, $options);
+
+        // Get the ACL that was applied to the new object so that we can modify
+        // it as needed to match the ACL of the original object.
+        $newAcl = $this->simplifyAcl($newObject->acl()->get());
+
+        foreach (array_keys($newAcl) as $entity) {
+            if (!isset($originalAcl[$entity])) {
+                $newObject->acl()->delete($entity);
+            }
+        }
+
+        foreach ($originalAcl as $entity => $role) {
+            if (!isset($newAcl[$entity])) {
+                $newObject->acl()->add($entity, $role);
+            } elseif ($newAcl[$entity] != $role) {
+                $newAcl->acl()->update($entity, $role);
+            }
+        }
 
         return true;
     }
@@ -410,11 +434,11 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         try {
             $acl = $this->getObject($path)->acl()->get(['entity' => 'allUsers']);
-            return $acl['role'] === Acl::ROLE_READER ?
+            return ($acl['role'] === Acl::ROLE_READER || $acl['role'] == Acl::ROLE_OWNER) ?
                 AdapterInterface::VISIBILITY_PUBLIC :
                 AdapterInterface::VISIBILITY_PRIVATE;
         } catch (NotFoundException $e) {
-            // object may not have an acl entry, so handle that gracefully
+            // No ACL entry for allUsers means object is private.
             return AdapterInterface::VISIBILITY_PRIVATE;
         }
     }
