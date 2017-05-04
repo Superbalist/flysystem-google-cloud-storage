@@ -223,37 +223,47 @@ class GoogleStorageAdapter extends AbstractAdapter
     }
 
     /**
+     * Update the ACL of the target object to match the source object.
+     *
+     * @param $sourceObject
+     * @param $targetObject
+     */
+    protected function copyAcl($sourceObject, $targetObject)
+    {
+        $sourceAcl = $this->simplifyAcl($sourceObject->acl()->get());
+
+        $targetAcl = $this->simplifyAcl($targetObject->acl()->get());
+
+        foreach (array_keys($targetAcl) as $entity) {
+            if (!isset($sourceAcl[$entity])) {
+                $targetObject->acl()->delete($entity);
+            }
+        }
+
+        foreach ($sourceAcl as $entity => $role) {
+            if (!isset($targetAcl[$entity])) {
+                $targetObject->acl()->add($entity, $role);
+            } elseif ($targetAcl[$entity] != $role) {
+                $targetObject->acl()->update($entity, $role);
+            }
+        }
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function copy($path, $newpath)
     {
         $newpath = $this->applyPathPrefix($newpath);
 
-        $originalObject = $this->getObject($path);
-        $originalAcl = $this->simplifyAcl($originalObject->acl()->get());
+        $sourceObject = $this->getObject($path);
 
         $options = [
             'name' => $newpath,
         ];
-        $newObject = $originalObject->copy($this->bucket, $options);
+        $targetObject = $sourceObject->copy($this->bucket, $options);
 
-        // Get the ACL that was applied to the new object so that we can modify
-        // it as needed to match the ACL of the original object.
-        $newAcl = $this->simplifyAcl($newObject->acl()->get());
-
-        foreach (array_keys($newAcl) as $entity) {
-            if (!isset($originalAcl[$entity])) {
-                $newObject->acl()->delete($entity);
-            }
-        }
-
-        foreach ($originalAcl as $entity => $role) {
-            if (!isset($newAcl[$entity])) {
-                $newObject->acl()->add($entity, $role);
-            } elseif ($newAcl[$entity] != $role) {
-                $newObject->acl()->update($entity, $role);
-            }
-        }
+        $this->copyAcl($sourceObject, $targetObject);
 
         return true;
     }
