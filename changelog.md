@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.1 - 2017-05-19
+
+* Allow for google/cloud ^0.22.0|^0.23.0|^0.24.0|^0.25.0|^0.26.0|^0.27.0|^0.28.0|^0.29.0|^0.30.0g
+
 ## 5.0.0 - 2017-04-03
 
 * Fix to readStream incorrectly returning a `StreamInterface` instead of a `resource` (@andris-sevcenko)
