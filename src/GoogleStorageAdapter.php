@@ -416,6 +416,9 @@ class GoogleStorageAdapter extends AbstractAdapter
         } catch (NotFoundException $e) {
             // object may not have an acl entry, so handle that gracefully
             return AdapterInterface::VISIBILITY_PRIVATE;
+        } catch(\Google\Cloud\Core\Exception\NotFoundException $e) {
+            // no acl for modern cloud sdk
+            return AdapterInterface::VISIBILITY_PRIVATE;
         }
     }
 
