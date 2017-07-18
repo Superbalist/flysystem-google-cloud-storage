@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.3 - 2017-07-18
+
+* Allow for google/cloud ^0.31.0|^0.32.0|^0.33.0|^0.34.0|^0.35.0
+
 ## 5.0.2 - 2017-07-04
 
 * Fix broken move/rename operations (@maksimru)
