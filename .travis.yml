@@ -9,6 +9,11 @@ php:
   - hhvm
   - nightly
 
+env:
+  - GOOGLE_CLOUD=">=0.10.2 <0.14"
+  - GOOGLE_CLOUD=">=0.21 <0.36"
+  - GOOGLE_CLOUD=">=0.36"
+
 matrix:
   fast_finish: true
   allow_failures:
@@ -19,6 +24,7 @@ before_install:
 
 install:
   - travis_retry composer install --no-interaction --prefer-source
+  - travis_retry composer require --no-interaction --prefer-source "google/cloud ${GOOGLE_CLOUD}"
 
 script:
   - bin/phpunit
