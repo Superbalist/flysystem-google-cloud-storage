@@ -16,6 +16,11 @@ use League\Flysystem\Util;
 class GoogleStorageAdapter extends AbstractAdapter
 {
     /**
+     * @const STORAGE_API_URI_DEFAULT
+     */
+    const STORAGE_API_URI_DEFAULT = 'https://storage.googleapis.com';
+
+    /**
      * @var StorageClient
      */
     protected $storageClient;
@@ -28,7 +33,7 @@ class GoogleStorageAdapter extends AbstractAdapter
     /**
      * @var string
      */
-    protected $storageApiUri = 'https://storage.googleapis.com';
+    protected $storageApiUri;
 
     /**
      * @param StorageClient $storageClient
@@ -45,9 +50,7 @@ class GoogleStorageAdapter extends AbstractAdapter
             $this->setPathPrefix($pathPrefix);
         }
 
-        if ($storageApiUri) {
-            $this->storageApiUri = $storageApiUri;
-        }
+        $this->storageApiUri = ($storageApiUri) ?: self::STORAGE_API_URI_DEFAULT;
     }
 
     /**
@@ -82,8 +85,6 @@ class GoogleStorageAdapter extends AbstractAdapter
 
     /**
      * Return the storage api uri.
-     *
-     * @param string $uri
      *
      * @return string
      */
@@ -398,7 +399,15 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         $uri = rtrim($this->storageApiUri, '/');
         $path = $this->applyPathPrefix($path);
-        return $uri . '/' . $this->bucket->name() . '/' . $path;
+
+        // Only prepend bucket name if no custom storage uri specified
+        // Default: "https://storage.googleapis.com/{my_bucket}/{path_prefix}"
+        // Custom: "https://example.com/{path_prefix}"
+        if ($this->getStorageApiUri() === self::STORAGE_API_URI_DEFAULT) {
+            $path = $this->bucket->name() . '/' . $path;
+        }
+
+        return $uri . '/' . $path;
     }
 
     /**
