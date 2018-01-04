@@ -31,7 +31,7 @@ install:
 
 script:
   - echo "running tests for the following version"
-  - composer show google/cloud | grep versions | sed -e "s/^versions : \*//" | xargs
+  - "composer show google/cloud | grep versions | sed -e \"s/^versions : \*//\" | xargs"
   - bin/phpunit
 
 after_script:
