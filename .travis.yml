@@ -24,9 +24,9 @@ matrix:
 
 before_install:
   - bash -c 'if [[ "${TRAVIS_PHP_VERSION}" == "hhvm" ]]; then rm phpunit.xml; mv phpunit.hhvm.xml phpunit.xml; fi;'
-  - bash -c 'if [[ -z "$GOOGLE_CLOUD"  ]]; then GOOGLE_CLOUD=$(composer show google/cloud -a | grep versions | cut -d "," -f ${PACKAGE_ID} |  sed -e "s/^versions ://" | xargs); fi;'
+#  - bash -c 'if [[ -z "$GOOGLE_CLOUD"  ]]; then GOOGLE_CLOUD=$(composer show google/cloud -a | grep versions | cut -d "," -f ${PACKAGE_ID} |  sed -e "s/^versions ://" | xargs); fi;'
 install:
-  - travis_retry composer require --no-interaction --no-suggest "google/cloud:${GOOGLE_CLOUD}"
+  - travis_retry if [[ -z "$GOOGLE_CLOUD"  ]]; then GOOGLE_CLOUD=$(composer show google/cloud -a | grep versions | cut -d "," -f ${PACKAGE_ID} |  sed -e "s/^versions ://" | xargs); fi; | composer require --no-interaction --no-suggest "google/cloud:${GOOGLE_CLOUD}"
   - travis_retry composer install --no-interaction --no-suggest
 
 script:
@@ -35,3 +35,5 @@ script:
 after_script:
   - wget https://scrutinizer-ci.com/ocular.phar
   - bash -c 'if [[ "${TRAVIS_PHP_VERSION}" != "hhvm" ]; then php ocular.phar code-coverage:upload --format=php-clover coverage.xml; fi;'
+
+
