@@ -31,7 +31,7 @@ install:
   - travis_retry composer install --no-interaction --no-suggest
 
 script:
-  - export $GOOGLE_CLOUD
+  - export GOOGLE_CLOUD=$GOOGLE_CLOUD
   - bin/phpunit
 
 after_script:
