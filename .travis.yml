@@ -11,9 +11,9 @@ php:
 
 env:
   - GOOGLE_CLOUD="0.21.*"
-  - GOOGLE_CLOUD="0.41.*"
-  - GOOGLE_CLOUD="0.42.*"
-  - GOOGLE_CLOUD="0.43.*"
+  - GOOGLE_CLOUD="0.47.*"
+  - GOOGLE_CLOUD="0.48.*"
+  - GOOGLE_CLOUD="0.49.*"
 
 matrix:
   fast_finish: true
