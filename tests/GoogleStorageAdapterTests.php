@@ -918,6 +918,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $adapter->setStorageApiUri('http://my-domain.com/');
         $adapter->setPathPrefix('another-prefix');
-        $this->assertEquals('http://my-domain.com/my-bucket/another-prefix/dir/file.txt', $adapter->getUrl('dir/file.txt'));
+        // no bucket name on custom domain
+        $this->assertEquals('http://my-domain.com/another-prefix/dir/file.txt', $adapter->getUrl('dir/file.txt'));
     }
 }

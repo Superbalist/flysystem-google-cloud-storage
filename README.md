@@ -92,3 +92,33 @@ $filesystem->deleteDir('path/to/directory');
 
 // see http://flysystem.thephpleague.com/api/ for full list of available functionality
 ```
+
+## Google Storage specifics
+
+When using a custom storage uri the bucket name will not prepended to the file path.
+
+```php
+$storageClient = new StorageClient([
+    'projectId' => 'your-project-id',
+]);
+$bucket = $storageClient->bucket('your-bucket-name');
+$adapter = new GoogleStorageAdapter($storageClient, $bucket);
+
+// uri defaults to "https://storage.googleapis.com"
+$filesystem = new Filesystem($adapter);
+$filesystem->getUrl('path/to/file.txt');
+// "https://storage.googleapis.com/your-bucket-name/path/to/file.txt"
+
+// set custom storage uri
+$adapter->setStorageApiUri('http://example.com');
+$filesystem = new Filesystem($adapter);
+$filesystem->getUrl('path/to/file.txt');
+// "http://example.com/path/to/file.txt"
+
+// You can also prefix the file path if needed.
+$adapter->setStorageApiUri('http://example.com');
+$adapter->setPathPrefix('extra-folder/another-folder/');
+$filesystem = new Filesystem($adapter);
+$filesystem->getUrl('path/to/file.txt');
+// "http://example.com/extra-folder/another-folder/path/to/file.txt"
+```
