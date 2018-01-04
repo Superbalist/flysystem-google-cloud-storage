@@ -17,7 +17,6 @@ env:
   - PACKAGE_ID=1
   - PACKAGE_ID=2
 #  - PACKAGE_ID=3
-  - GOOGLE_CLOUD="$(composer show google/cloud -a | grep versions | cut -d "," -f 2 |  sed -e "s/^versions ://" | xargs); fi)"
 
 matrix:
   fast_finish: true
@@ -32,7 +31,7 @@ install:
   - travis_retry composer install --no-interaction --no-suggest
 
 script:
-  - echo "running tests for the following version"
+  - export $GOOGLE_CLOUD
   - bin/phpunit
 
 after_script:
