@@ -11,8 +11,6 @@ php:
 
 env:
   - GOOGLE_CLOUD="0.21.*"
-  - GOOGLE_CLOUD="0.41.*"
-  - GOOGLE_CLOUD="0.42.*"
   - GOOGLE_CLOUD="0.43.*"
   - RELEASE_TAG=1 # dev-master
   - RELEASE_TAG=2 # latest-stable
