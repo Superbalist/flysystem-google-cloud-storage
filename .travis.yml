@@ -9,16 +9,27 @@ php:
   - hhvm
   - nightly
 
+env:
+  - GOOGLE_CLOUD="0.21.*"
+  - GOOGLE_CLOUD="0.41.*"
+  - GOOGLE_CLOUD="0.42.*"
+  - GOOGLE_CLOUD="0.43.*"
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - php: nightly
+
 before_install:
-  - bash -c 'if [ "$TRAVIS_PHP_VERSION" == "hhvm" ]; then rm phpunit.xml; fi;'
-  - bash -c 'if [ "$TRAVIS_PHP_VERSION" == "hhvm" ]; then mv phpunit.hhvm.xml phpunit.xml; fi;'
+  - bash -c 'if [[ "${TRAVIS_PHP_VERSION}" == "hhvm" ]]; then rm phpunit.xml; mv phpunit.hhvm.xml phpunit.xml; fi;'
 
 install:
-  - travis_retry composer install --no-interaction --prefer-source
+  - travis_retry composer require --no-interaction --no-suggest "google/cloud:${GOOGLE_CLOUD}"
+  - travis_retry composer install --no-interaction --no-suggest
 
 script:
   - bin/phpunit
 
 after_script:
   - wget https://scrutinizer-ci.com/ocular.phar
-  - bash -c 'if [ "$TRAVIS_PHP_VERSION" != "hhvm" ]; then php ocular.phar code-coverage:upload --format=php-clover coverage.xml; fi;'
+  - bash -c 'if [[ "${TRAVIS_PHP_VERSION}" != "hhvm" ]; then php ocular.phar code-coverage:upload --format=php-clover coverage.xml; fi;'
