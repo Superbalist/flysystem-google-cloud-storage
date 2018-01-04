@@ -10,12 +10,13 @@ php:
 #  - nightly
 
 env:
-  - GOOGLE_CLOUD="0.21.*"
+#  - GOOGLE_CLOUD="0.21.*"
 #  - GOOGLE_CLOUD="0.41.*"
 #  - GOOGLE_CLOUD="0.42.*"
 #  - GOOGLE_CLOUD="0.43.*"
   - PACKAGE_ID=1
-  - PACKAGE_ID=2
+#  - PACKAGE_ID=2
+#  - PACKAGE_ID=3
 
 matrix:
   fast_finish: true
@@ -31,7 +32,6 @@ install:
 
 script:
   - echo "running tests for the following version"
-  - "composer show google/cloud | grep versions | sed -e \"s/^versions : \*//\" | xargs"
   - bin/phpunit
 
 after_script:
