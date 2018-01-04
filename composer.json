@@ -11,7 +11,7 @@
 	"require": {
 		"php": ">=5.5.0",
 		"league/flysystem": "~1.0",
-		"google/cloud": ">=0.10.2 <0.14|>=0.21 <0.36"
+		"google/cloud": ">=0.10.2 <0.14|>=0.21 <0.50"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "~4.0",
