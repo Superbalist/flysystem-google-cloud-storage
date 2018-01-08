@@ -11,23 +11,27 @@ php:
 
 env:
   - GOOGLE_CLOUD="0.21.*"
-  - GOOGLE_CLOUD="0.47.*"
-  - GOOGLE_CLOUD="0.48.*"
-  - GOOGLE_CLOUD="0.49.*"
+  - GOOGLE_CLOUD="0.43.*"
+  - RELEASE_TAG=1 # dev-master
+  - RELEASE_TAG=2 # latest-stable
+  - RELEASE_TAG=3 # previous-stable
 
 matrix:
   fast_finish: true
   allow_failures:
     - php: nightly
+    - env: RELEASE_TAG=1
 
 before_install:
   - bash -c 'if [[ "${TRAVIS_PHP_VERSION}" == "hhvm" ]]; then rm phpunit.xml; mv phpunit.hhvm.xml phpunit.xml; fi;'
 
 install:
+  - if [[ -z "$GOOGLE_CLOUD"  ]]; then GOOGLE_CLOUD=$(travis_retry composer show google/cloud -a | grep versions | cut -d "," -f ${RELEASE_TAG} |  sed -e "s/^versions ://" | xargs); fi;
   - travis_retry composer require --no-interaction --no-suggest "google/cloud:${GOOGLE_CLOUD}"
   - travis_retry composer install --no-interaction --no-suggest
 
 script:
+  - export GOOGLE_CLOUD=$GOOGLE_CLOUD
   - bin/phpunit
 
 after_script:
