@@ -18,7 +18,7 @@ class GoogleStorageAdapter extends AbstractAdapter
     /**
      * @const STORAGE_API_URI_DEFAULT
      */
-    const STORAGE_API_URI_DEFAULT = 'https://storage.googleapis.com';
+    public const STORAGE_API_URI_DEFAULT = 'https://storage.googleapis.com';
 
     /**
      * @var StorageClient
