@@ -4,7 +4,6 @@ A Google Cloud Storage adapter for [flysystem](https://github.com/thephpleague/f
 
 [![Author](http://img.shields.io/badge/author-@superbalist-blue.svg?style=flat-square)](https://twitter.com/superbalist)
 [![Build Status](https://img.shields.io/travis/Superbalist/flysystem-google-cloud-storage/master.svg?style=flat-square)](https://travis-ci.org/Superbalist/flysystem-google-cloud-storage)
-[![StyleCI](https://styleci.io/repos/44370843/shield?branch=style-ci)](https://styleci.io/repos/44370843)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
 [![Packagist Version](https://img.shields.io/packagist/v/superbalist/flysystem-google-storage.svg?style=flat-square)](https://packagist.org/packages/superbalist/flysystem-google-storage)
 [![Total Downloads](https://img.shields.io/packagist/dt/superbalist/flysystem-google-storage.svg?style=flat-square)](https://packagist.org/packages/superbalist/flysystem-google-storage)
