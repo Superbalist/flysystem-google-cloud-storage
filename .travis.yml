@@ -29,7 +29,7 @@ before_install:
 
 install:
   - if [[ -z "$GOOGLE_CLOUD_STORAGE"  ]]; then GOOGLE_CLOUD_STORAGE=$(travis_retry composer show google/cloud-storage -a | grep versions | cut -d "," -f ${RELEASE_TAG} |  sed -e "s/^versions ://" | xargs); fi;
-  - travis_retry composer require --no-interaction --no-suggest "google/cloud-storage:${GOOGLE_CLOUD}"
+  - travis_retry composer require --no-interaction --no-suggest "google/cloud-storage:${GOOGLE_CLOUD_STORAGE}"
   - travis_retry composer install --no-interaction --no-suggest
 
 script:
