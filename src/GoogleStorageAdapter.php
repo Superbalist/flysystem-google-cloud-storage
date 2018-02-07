@@ -2,7 +2,7 @@
 
 namespace Superbalist\Flysystem\GoogleStorage;
 
-use Google\Cloud\Exception\NotFoundException;
+use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Storage\Acl;
 use Google\Cloud\Storage\Bucket;
 use Google\Cloud\Storage\StorageClient;
@@ -424,9 +424,6 @@ class GoogleStorageAdapter extends AbstractAdapter
                 AdapterInterface::VISIBILITY_PRIVATE;
         } catch (NotFoundException $e) {
             // object may not have an acl entry, so handle that gracefully
-            return AdapterInterface::VISIBILITY_PRIVATE;
-        } catch (\Google\Cloud\Core\Exception\NotFoundException $e) {
-            // no acl for modern cloud sdk
             return AdapterInterface::VISIBILITY_PRIVATE;
         }
     }
