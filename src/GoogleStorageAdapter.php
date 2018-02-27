@@ -171,7 +171,7 @@ class GoogleStorageAdapter extends AbstractAdapter
         $options = $this->getOptionsFromConfig($config);
         $options['name'] = $path;
         
-        if (!isset($options['metadata']['contentType']) {
+        if (!isset($options['metadata']['contentType'])) {
             $options['metadata']['contentType'] = mime_content_type($path);
         }
 
