@@ -411,6 +411,19 @@ class GoogleStorageAdapter extends AbstractAdapter
     }
 
     /**
+     * Returns temporary url
+     * 
+     * @param       $path
+     * @param       $expiration
+     * @param array $options
+     * @return string
+     */
+    public function getTemporaryUrl($path, $expiration, array $options = [])
+    {
+        return $this->getObject($path)->signedUrl($expiration, $options);
+    }
+    
+    /**
      * @param string $path
      *
      * @return string
