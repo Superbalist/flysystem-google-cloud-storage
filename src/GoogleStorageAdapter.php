@@ -411,6 +411,61 @@ class GoogleStorageAdapter extends AbstractAdapter
     }
 
     /**
+     * Get a temporary URL (Signed) for the file at the given path.
+     * @param string $path
+     * @param \DateTimeInterface|int $expiration Specifies when the URL
+     *        will expire. May provide an instance of [http://php.net/datetimeimmutable](`\DateTimeImmutable`),
+     *        or a UNIX timestamp as an integer.
+     * @param array $options {
+     *     Configuration Options.
+     *
+     *     @type string $method One of `GET`, `PUT` or `DELETE`.
+     *           **Defaults to** `GET`.
+     *     @type string $cname The CNAME for the bucket, for instance
+     *           `https://cdn.example.com`. **Defaults to**
+     *           `https://storage.googleapis.com`.
+     *     @type string $contentMd5 The MD5 digest value in base64. If you
+     *           provide this, the client must provide this HTTP header with
+     *           this same value in its request. If provided, take care to
+     *           always provide this value as a base64 encoded string.
+     *     @type string $contentType If you provide this value, the client must
+     *           provide this HTTP header set to the same value.
+     *     @type array $headers If these headers are used, the server will check
+     *           to make sure that the client provides matching values. Provide
+     *           headers as a key/value array, where the key is the header name,
+     *           and the value is an array of header values.
+     *     @type string $saveAsName The filename to prompt the user to save the
+     *           file as when the signed url is accessed. This is ignored if
+     *           `$options.responseDisposition` is set.
+     *     @type string $responseDisposition The
+     *           [`response-content-disposition`](http://www.iana.org/assignments/cont-disp/cont-disp.xhtml)
+     *           parameter of the signed url.
+     *     @type string $responseType The `response-content-type` parameter of the
+     *           signed url.
+     *     @type array $keyFile Keyfile data to use in place of the keyfile with
+     *           which the client was constructed. If `$options.keyFilePath` is
+     *           set, this option is ignored.
+     *     @type string $keyFilePath A path to a valid Keyfile to use in place
+     *           of the keyfile with which the client was constructed.
+     *     @type bool $forceOpenssl If true, OpenSSL will be used regardless of
+     *           whether phpseclib is available. **Defaults to** `false`.
+     * }
+     * @return string
+     */
+    public function getTemporaryUrl($path, $expiration, $options = [])
+    {
+        $object = $this->getObject($path);
+        $signedUrl = $object->signedUrl($expiration, $options);
+
+        if ($this->getStorageApiUri() !== self::STORAGE_API_URI_DEFAULT) {
+            list($url, $params) = explode('?', $signedUrl, 2);
+            $signedUrl = $this->getUrl($path) . '?' . $params;
+        }
+
+        return $signedUrl;
+    }
+
+    /**
      * @param string $path
      *
      * @return string
