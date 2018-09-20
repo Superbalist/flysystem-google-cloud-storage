@@ -1,5 +1,19 @@
 # Changelog
 
+## 7.1.0 - 2018-09-20
+
+* Allow the use of any 1.* google/cloud-storage version
+
+## 7.0.0 - 2018-02-07
+
+* Move from google/cloud to google/cloud-storage package to simplify updating dependencies
+
+## 6.0.0 - 2018-01-08
+
+* Bump supported google/cloud versions
+* fix: remove bucket name prepending when using a custom storage uri
+* simplify google/cloud composer version pinning
+
 ## 5.0.3 - 2017-07-18
 
 * Allow for google/cloud ^0.31.0|^0.32.0|^0.33.0|^0.34.0|^0.35.0
