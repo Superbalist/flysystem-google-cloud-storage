@@ -14,6 +14,8 @@ env:
   - GOOGLE_CLOUD_STORAGE="1.1.*"
   - GOOGLE_CLOUD_STORAGE="1.2.*"
   - GOOGLE_CLOUD_STORAGE="1.3.*"
+  - GOOGLE_CLOUD_STORAGE="1.4.*"
+  - GOOGLE_CLOUD_STORAGE="1.5.*"
   - RELEASE_TAG=1 # dev-master
   - RELEASE_TAG=2 # latest-stable
   - RELEASE_TAG=3 # previous-stable
