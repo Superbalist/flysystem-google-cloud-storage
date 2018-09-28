@@ -400,6 +400,11 @@ class GoogleStorageAdapter extends AbstractAdapter
         $uri = rtrim($this->storageApiUri, '/');
         $path = $this->applyPathPrefix($path);
 
+        // Generating an uri with whitespaces or any other characters besides alphanumeric characters or "-_.~" will
+        // not be RFC 3986 compliant. They will work in most browsers because they are automatically encoded but
+        // may fail when passed to other software modules which are not doing automatic encoding.
+        $path = implode('/', array_map('rawurlencode', explode('/', $path)));
+
         // Only prepend bucket name if no custom storage uri specified
         // Default: "https://storage.googleapis.com/{my_bucket}/{path_prefix}"
         // Custom: "https://example.com/{path_prefix}"
