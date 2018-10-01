@@ -249,7 +249,15 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function deleteDir($dirname)
     {
-        return $this->delete($this->normaliseDirName($dirname));
+        $files = $this->listContents($dirname, true);
+        foreach ($files as $file) {
+            $path = $file['path'];
+            if ($file['type'] == 'dir') {
+                $path = $this->normaliseDirName($path);
+            }
+            $this->delete($path);
+        }
+        return true;
     }
 
     /**
