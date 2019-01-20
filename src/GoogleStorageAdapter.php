@@ -259,9 +259,12 @@ class GoogleStorageAdapter extends AbstractAdapter
         });
 
         // We remove all objects that should not be deleted.
-        $filtered_objects = array_filter($objects, function ($object) use ($dirname) {
-            return strpos($object['path'], $dirname) !== false;
-        }, true);
+        $filtered_objects = [];
+        foreach ($objects as $object) {
+            if (strpos($object['path'], $dirname) !== false) {
+                $filtered_objects[] = $object;
+            }
+        }
 
         // Execute deletion for each object.
         foreach ($filtered_objects as $object) {
