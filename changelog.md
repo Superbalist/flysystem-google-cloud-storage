@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.2.0 - 2019-02-07
+
+* Delete now recursivley deletes all objects inside the directory before deleting the directory itself
+
 ## 7.1.0 - 2018-09-20
 
 * Allow the use of any 1.* google/cloud-storage version
