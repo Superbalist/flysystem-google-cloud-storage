@@ -254,13 +254,18 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         // We first delete the file, so that we can delete
         // the empty folder at the end.
-        uasort($objects, function ($a, $b) {
+        uasort($objects, function ($b) {
             return $b['type'] === 'file' ? 1 : -1;
         });
 
         // We remove all objects that should not be deleted.
         $filtered_objects = [];
         foreach ($objects as $object) {
+            // normalise directories path
+            if ($object['type'] === 'dir') {
+                $object['path'] = $this->normaliseDirName($object['path']);
+            }
+
             if (strpos($object['path'], $dirname) !== false) {
                 $filtered_objects[] = $object;
             }
@@ -268,13 +273,7 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         // Execute deletion for each object.
         foreach ($filtered_objects as $object) {
-            $path = $object['path'];
-
-            if ($object['type'] === 'dir') {
-                $path = $this->normaliseDirName($path);
-            }
-
-            $this->delete($path);
+            $this->delete($object['path']);
         }
 
         return true;
