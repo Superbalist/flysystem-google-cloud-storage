@@ -254,7 +254,7 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         // We first delete the file, so that we can delete
         // the empty folder at the end.
-        uasort($objects, function ($b) {
+        uasort($objects, function ($a, $b) {
             return $b['type'] === 'file' ? 1 : -1;
         });
 
