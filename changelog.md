@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.2.1 - 2019-02-21
+
+* Fix bug where recursive delete would not delete directories (Issue #96)
+
 ## 7.2.0 - 2019-02-07
 
 * Delete now recursivley deletes all objects inside the directory before deleting the directory itself
