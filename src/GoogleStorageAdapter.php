@@ -140,13 +140,9 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         $options = [];
 
-        if ($visibility = $config->get('visibility')) {
-            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility($visibility);
-        } else {
-            // if a file is created without an acl, it isn't accessible via the console
-            // we therefore default to private
-            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(AdapterInterface::VISIBILITY_PRIVATE);
-        }
+        $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(
+            $config->get('visibility')
+        );
 
         if ($metadata = $config->get('metadata')) {
             $options['metadata'] = $metadata;
@@ -471,10 +467,17 @@ class GoogleStorageAdapter extends AbstractAdapter
     /**
      * @param string $visibility
      *
-     * @return string
+     * @return string|null
      */
     protected function getPredefinedAclForVisibility($visibility)
     {
-        return $visibility === AdapterInterface::VISIBILITY_PUBLIC ? 'publicRead' : 'projectPrivate';
+        $result = 'projectPrivate';
+        if ($visibility === AdapterInterface::VISIBILITY_PUBLIC) {
+            $result = 'publicRead';
+        }
+        if ($visibility == 'noAcl') {
+            $result = null;
+        }
+        return $result;
     }
 }
