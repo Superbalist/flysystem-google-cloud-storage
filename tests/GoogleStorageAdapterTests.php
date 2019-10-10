@@ -965,6 +965,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket);
         $this->assertEquals('https://storage.googleapis.com/my-bucket/file.txt', $adapter->getUrl('file.txt'));
+        $this->assertEquals('https://storage.googleapis.com/my-bucket/test%20folder/file%281%29.txt', $adapter->getUrl('test folder/file(1).txt'));
 
         $adapter->setPathPrefix('prefix');
         $this->assertEquals('https://storage.googleapis.com/my-bucket/prefix/file.txt', $adapter->getUrl('file.txt'));
