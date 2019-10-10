@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.2.2 - 2019-10-10
+
+* Generate rfc 3986 compliant urls
+* Add support for temporary URLs (Signed)
+
 ## 7.2.1 - 2019-02-21
 
 * Fix bug where recursive delete would not delete directories (Issue #96)
