@@ -37,9 +37,9 @@ class GoogleStorageAdapter extends AbstractAdapter
 
     /**
      * @param StorageClient $storageClient
-     * @param Bucket $bucket
-     * @param string $pathPrefix
-     * @param string $storageApiUri
+     * @param Bucket        $bucket
+     * @param string        $pathPrefix
+     * @param string        $storageApiUri
      */
     public function __construct(StorageClient $storageClient, Bucket $bucket, $pathPrefix = null, $storageApiUri = null)
     {
@@ -158,9 +158,9 @@ class GoogleStorageAdapter extends AbstractAdapter
     /**
      * Uploads a file to the Google Cloud Storage service.
      *
-     * @param string $path
+     * @param string          $path
      * @param string|resource $contents
-     * @param Config $config
+     * @param Config          $config
      *
      * @return array
      */
@@ -194,12 +194,12 @@ class GoogleStorageAdapter extends AbstractAdapter
         }
 
         return [
-            'type' => $isDir ? 'dir' : 'file',
-            'dirname' => Util::dirname($name),
-            'path' => $name,
+            'type'      => $isDir ? 'dir' : 'file',
+            'dirname'   => Util::dirname($name),
+            'path'      => $name,
             'timestamp' => strtotime($info['updated']),
-            'mimetype' => isset($info['contentType']) ? $info['contentType'] : '',
-            'size' => $info['size'],
+            'mimetype'  => isset($info['contentType']) ? $info['contentType'] : '',
+            'size'      => $info['size'],
         ];
     }
 
@@ -226,7 +226,7 @@ class GoogleStorageAdapter extends AbstractAdapter
         $visibility = $this->getRawVisibility($path);
 
         $options = [
-            'name' => $newpath,
+            'name'          => $newpath,
             'predefinedAcl' => $this->getPredefinedAclForVisibility($visibility),
         ];
         $this->getObject($path)->copy($this->bucket, $options);
@@ -308,7 +308,7 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         if ($visibility === AdapterInterface::VISIBILITY_PRIVATE) {
             $object->acl()->delete('allUsers');
-        } elseif ($visibility === AdapterInterface::VISIBILITY_PUBLIC) {
+        } else if ($visibility === AdapterInterface::VISIBILITY_PUBLIC) {
             $object->acl()->add('allUsers', Acl::ROLE_READER);
         }
 
@@ -323,7 +323,13 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function has($path)
     {
-        return $this->getObject($path)->exists();
+        if ($this->getObject($path)->exists()) {
+            return true;
+        }
+
+        return count(array_filter($this->listContents($path), function ($item) use ($path) {
+                return $item['path'] === $path;
+            })) === 1;
     }
 
     /**
@@ -444,42 +450,44 @@ class GoogleStorageAdapter extends AbstractAdapter
 
     /**
      * Get a temporary URL (Signed) for the file at the given path.
-     * @param string $path
-     * @param \DateTimeInterface|int $expiration Specifies when the URL
-     *        will expire. May provide an instance of [http://php.net/datetimeimmutable](`\DateTimeImmutable`),
-     *        or a UNIX timestamp as an integer.
-     * @param array $options {
-     *     Configuration Options.
      *
-     *     @type string $method One of `GET`, `PUT` or `DELETE`.
+     * @param string                 $path
+     * @param \DateTimeInterface|int $expiration          Specifies when the URL
+     *                                                    will expire. May provide an instance of
+     *                                                    [http://php.net/datetimeimmutable](`\DateTimeImmutable`), or
+     *                                                    a UNIX timestamp as an integer.
+     * @param array                  $options             {
+     *                                                    Configuration Options.
+     *
+     * @type string                  $method              One of `GET`, `PUT` or `DELETE`.
      *           **Defaults to** `GET`.
-     *     @type string $cname The CNAME for the bucket, for instance
+     * @type string                  $cname               The CNAME for the bucket, for instance
      *           `https://cdn.example.com`. **Defaults to**
      *           `https://storage.googleapis.com`.
-     *     @type string $contentMd5 The MD5 digest value in base64. If you
+     * @type string                  $contentMd5          The MD5 digest value in base64. If you
      *           provide this, the client must provide this HTTP header with
      *           this same value in its request. If provided, take care to
      *           always provide this value as a base64 encoded string.
-     *     @type string $contentType If you provide this value, the client must
+     * @type string                  $contentType         If you provide this value, the client must
      *           provide this HTTP header set to the same value.
-     *     @type array $headers If these headers are used, the server will check
+     * @type array                   $headers             If these headers are used, the server will check
      *           to make sure that the client provides matching values. Provide
      *           headers as a key/value array, where the key is the header name,
      *           and the value is an array of header values.
-     *     @type string $saveAsName The filename to prompt the user to save the
+     * @type string                  $saveAsName          The filename to prompt the user to save the
      *           file as when the signed url is accessed. This is ignored if
      *           `$options.responseDisposition` is set.
-     *     @type string $responseDisposition The
+     * @type string                  $responseDisposition The
      *           [`response-content-disposition`](http://www.iana.org/assignments/cont-disp/cont-disp.xhtml)
      *           parameter of the signed url.
-     *     @type string $responseType The `response-content-type` parameter of the
+     * @type string                  $responseType        The `response-content-type` parameter of the
      *           signed url.
-     *     @type array $keyFile Keyfile data to use in place of the keyfile with
+     * @type array                   $keyFile             Keyfile data to use in place of the keyfile with
      *           which the client was constructed. If `$options.keyFilePath` is
      *           set, this option is ignored.
-     *     @type string $keyFilePath A path to a valid Keyfile to use in place
+     * @type string                  $keyFilePath         A path to a valid Keyfile to use in place
      *           of the keyfile with which the client was constructed.
-     *     @type bool $forceOpenssl If true, OpenSSL will be used regardless of
+     * @type bool                    $forceOpenssl        If true, OpenSSL will be used regardless of
      *           whether phpseclib is available. **Defaults to** `false`.
      * }
      * @return string
