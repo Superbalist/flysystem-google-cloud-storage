@@ -273,7 +273,9 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         // Execute deletion for each object.
         foreach ($filtered_objects as $object) {
-            $this->delete($object['path']);
+            if ($this->has($object['path'])) {
+                $this->delete($object['path']);
+            }
         }
 
         return true;
