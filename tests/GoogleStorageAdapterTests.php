@@ -352,6 +352,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $bucket = Mockery::mock(Bucket::class);
 
         $storageObject = Mockery::mock(StorageObject::class);
+        $storageObject->shouldReceive('exists')->times(3)->andReturn(true);
         $storageObject->shouldReceive('delete')
             ->times(3);
         $storageObject->shouldReceive('name')
@@ -367,17 +368,17 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $bucket->shouldReceive('object')
             ->with('prefix/dir_name/directory1/file1.txt')
-            ->once()
+            ->times(2)
             ->andReturn($storageObject);
 
         $bucket->shouldReceive('object')
             ->with('prefix/dir_name/directory1/')
-            ->once()
+            ->times(2)
             ->andReturn($storageObject);
 
         $bucket->shouldReceive('object')
             ->with('prefix/dir_name/')
-            ->once()
+            ->times(2)
             ->andReturn($storageObject);
 
         $bucket->shouldReceive('objects')
@@ -397,6 +398,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $bucket = Mockery::mock(Bucket::class);
 
         $storageObject = Mockery::mock(StorageObject::class);
+        $storageObject->shouldReceive('exists')->times(3)->andReturn(true);
         $storageObject->shouldReceive('delete')
             ->times(3);
 
@@ -413,17 +415,17 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
 
         $bucket->shouldReceive('object')
             ->with('prefix/dir_name/directory1/file1.txt')
-            ->once()
+            ->times(2)
             ->andReturn($storageObject);
 
         $bucket->shouldReceive('object')
             ->with('prefix/dir_name/directory1/')
-            ->once()
+            ->times(2)
             ->andReturn($storageObject);
 
         $bucket->shouldReceive('object')
             ->with('prefix/dir_name/')
-            ->once()
+            ->times(2)
             ->andReturn($storageObject);
 
         $bucket->shouldReceive('objects')
