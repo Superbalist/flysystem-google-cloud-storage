@@ -164,6 +164,54 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $data);
     }
 
+    public function testWriteWithPredefinedMimeType()
+    {
+        $bucket = Mockery::mock(Bucket::class);
+
+        $storageObject = Mockery::mock(StorageObject::class);
+        $storageObject->shouldReceive('name')
+            ->once()
+            ->andReturn('prefix/file1');
+        $storageObject->shouldReceive('info')
+            ->once()
+            ->andReturn([
+                'updated' => '2016-09-26T14:44:42+00:00',
+                'contentType' => 'text/plain',
+                'size' => 5,
+            ]);
+
+        $bucket->shouldReceive('upload')
+            ->withArgs([
+                'This is the file contents.',
+                [
+                    'predefinedAcl' => 'projectPrivate',
+                    'name' => 'prefix/file1',
+                    'mimetype' => 'text/plain',
+                    'metadata' => [
+                        'contentType' => 'text/plain',
+                    ]
+                ],
+            ])
+            ->once()
+            ->andReturn($storageObject);
+
+        $storageClient = Mockery::mock(StorageClient::class);
+
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
+
+        $data = $adapter->write('file1', 'This is the file contents.', new Config(['mimetype' => 'text/plain']));
+
+        $expected = [
+            'type' => 'file',
+            'dirname' => '',
+            'path' => 'file1',
+            'timestamp' => 1474901082,
+            'mimetype' => 'text/plain',
+            'size' => 5,
+        ];
+        $this->assertEquals($expected, $data);
+    }
+
     public function testWriteStream()
     {
         $stream = tmpfile();
