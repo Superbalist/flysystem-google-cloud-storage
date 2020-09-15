@@ -167,9 +167,15 @@ class GoogleStorageAdapter extends AbstractAdapter
     protected function upload($path, $contents, Config $config)
     {
         $path = $this->applyPathPrefix($path);
-
         $options = $this->getOptionsFromConfig($config);
+
         $options['name'] = $path;
+
+        if ( ! $this->isOnlyDir($path)) {
+            if ( ! isset($options['metadata']['contentType'])) {
+                $options['metadata']['contentType'] = Util::guessMimeType($path, $contents);
+            }
+        }
 
         $object = $this->bucket->upload($contents, $options);
 
@@ -188,7 +194,7 @@ class GoogleStorageAdapter extends AbstractAdapter
         $name = $this->removePathPrefix($object->name());
         $info = $object->info();
 
-        $isDir = substr($name, -1) === '/';
+        $isDir = $this->isOnlyDir($name);
         if ($isDir) {
             $name = rtrim($name, '/');
         }
@@ -536,5 +542,17 @@ class GoogleStorageAdapter extends AbstractAdapter
     protected function getPredefinedAclForVisibility($visibility)
     {
         return $visibility === AdapterInterface::VISIBILITY_PUBLIC ? 'publicRead' : 'projectPrivate';
+    }
+
+    /**
+     * Check if the path contains only directories
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    protected function isOnlyDir($path)
+    {
+        return substr($path, -1) === '/';
     }
 }
