@@ -43,6 +43,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -87,6 +88,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -131,6 +133,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -177,6 +180,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -360,6 +364,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -406,6 +411,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -456,6 +462,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -497,6 +504,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -550,6 +558,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -591,6 +600,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -678,6 +688,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $dir1->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'application/octet-stream',
                 'size' => 0,
@@ -690,6 +701,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $dir1file1->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -702,6 +714,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $dir2file1->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -726,6 +739,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -764,6 +778,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'application/octet-stream',
                 'size' => 0,
@@ -802,6 +817,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -832,6 +848,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -862,6 +879,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
