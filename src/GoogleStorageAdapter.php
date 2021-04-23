@@ -140,7 +140,6 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         $options = [];
 
-
         if (empty($this->bucket->info()['iamConfiguration']['uniformBucketLevelAccess']['enabled'])) {
             if ($visibility = $config->get('visibility')) {
                 $options['predefinedAcl'] = $this->getPredefinedAclForVisibility($visibility);
