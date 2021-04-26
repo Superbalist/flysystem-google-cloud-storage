@@ -43,11 +43,16 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject->shouldReceive('info')
             ->once()
             ->andReturn([
+                'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]],
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('upload')
             ->withArgs([
                 'This is the file contents.',
@@ -91,6 +96,11 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
+
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
 
         $bucket->shouldReceive('upload')
             ->withArgs([
@@ -136,6 +146,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('upload')
             ->withArgs([
                 'This is the file contents.',
@@ -182,6 +196,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('upload')
             ->withArgs([
                 $stream,
@@ -365,6 +383,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('object')
             ->with('prefix/dir_name/directory1/file1.txt')
             ->once()
@@ -410,6 +432,11 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
+
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
 
         $bucket->shouldReceive('object')
             ->with('prefix/dir_name/directory1/file1.txt')
@@ -461,6 +488,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('object')
             ->with('prefix/file1.txt')
             ->once()
@@ -502,6 +533,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('object')
             ->with('prefix/file1.txt')
             ->once()
@@ -555,6 +590,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('object')
             ->with('prefix/file.txt')
             ->once()
@@ -596,6 +635,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('object')
             ->with('prefix/file.txt')
             ->once()
@@ -731,6 +774,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('object')
             ->with('prefix/file.txt')
             ->once()
@@ -769,6 +816,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 0,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('object')
             ->with('prefix/directory')
             ->once()
@@ -807,6 +858,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('object')
             ->with('prefix/file.txt')
             ->once()
@@ -837,6 +892,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('object')
             ->with('prefix/file.txt')
             ->once()
@@ -867,6 +926,10 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 'size' => 5,
             ]);
 
+	    $bucket->shouldReceive('info')
+		    ->andReturn([
+			    'iamConfiguration' => ['uniformBucketLevelAccess' => ['enabled' => false]]
+		    ]);
         $bucket->shouldReceive('object')
             ->with('prefix/file.txt')
             ->once()
