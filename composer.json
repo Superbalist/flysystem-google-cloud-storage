@@ -10,7 +10,7 @@
 	],
 	"require": {
 		"php": ">=5.5.0",
-		"league/flysystem": "~1.0",
+		"league/flysystem": "~1.0 || ~2.0 || ~3.0",
 		"google/cloud-storage": "~1.0"
 	},
 	"require-dev": {
