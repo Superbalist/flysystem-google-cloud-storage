@@ -273,7 +273,12 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         // Execute deletion for each object.
         foreach ($filtered_objects as $object) {
-            $this->delete($object['path']);
+            try {
+                $this->delete($object['path']);
+            } catch (NotFoundException $e) {
+                // If the file does not exist, the Google Cloud PHP API throws an exception.
+                // This exception should be caught here and ignored.
+            }
         }
 
         return true;

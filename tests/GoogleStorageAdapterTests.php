@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Storage\Acl;
 use Google\Cloud\Storage\Bucket;
 use Google\Cloud\Storage\StorageClient;
@@ -354,6 +355,55 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $storageObject = Mockery::mock(StorageObject::class);
         $storageObject->shouldReceive('delete')
             ->times(3);
+        $storageObject->shouldReceive('name')
+            ->once()
+            ->andReturn('prefix/dir_name/directory1/file1.txt');
+        $storageObject->shouldReceive('info')
+            ->once()
+            ->andReturn([
+                'updated' => '2016-09-26T14:44:42+00:00',
+                'contentType' => 'text/plain',
+                'size' => 5,
+            ]);
+
+        $bucket->shouldReceive('object')
+            ->with('prefix/dir_name/directory1/file1.txt')
+            ->once()
+            ->andReturn($storageObject);
+
+        $bucket->shouldReceive('object')
+            ->with('prefix/dir_name/directory1/')
+            ->once()
+            ->andReturn($storageObject);
+
+        $bucket->shouldReceive('object')
+            ->with('prefix/dir_name/')
+            ->once()
+            ->andReturn($storageObject);
+
+        $bucket->shouldReceive('objects')
+            ->with([
+                'prefix' => 'prefix/dir_name/'
+            ])->once()
+            ->andReturn([$storageObject]);
+
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
+
+        $adapter->deleteDir('dir_name');
+    }
+
+    public function testDeleteDirThatDoesNotExist()
+    {
+        $storageClient = Mockery::mock(StorageClient::class);
+        $bucket = Mockery::mock(Bucket::class);
+
+        $storageObject = Mockery::mock(StorageObject::class);
+        $storageObject->shouldReceive('delete')
+            ->times(2);
+        $storageObject->shouldReceive('delete')
+            ->once()
+            ->andThrow(new NotFoundException('Directory not found'));
+
         $storageObject->shouldReceive('name')
             ->once()
             ->andReturn('prefix/dir_name/directory1/file1.txt');
