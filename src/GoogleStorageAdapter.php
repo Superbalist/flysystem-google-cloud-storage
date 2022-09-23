@@ -176,6 +176,8 @@ class GoogleStorageAdapter extends AbstractAdapter
         return $this->normaliseObject($object);
     }
 
+   
+
     /**
      * Returns a dictionary of object metadata from an object.
      *
@@ -488,6 +490,23 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         $object = $this->getObject($path);
         $signedUrl = $object->signedUrl($expiration, $options);
+
+        if ($this->getStorageApiUri() !== self::STORAGE_API_URI_DEFAULT) {
+            list($url, $params) = explode('?', $signedUrl, 2);
+            $signedUrl = $this->getUrl($path) . '?' . $params;
+        }
+
+        return $signedUrl;
+    }
+
+    /**
+     * Get a signed URL for uploading
+     */
+    public function getUploadTemporaryUrl($path, $options = [])
+    {
+        $object = $this->getObject($path);
+        $signedUrl = $object->beginSignedUploadSession();
+        //$signedUrl = $object->signedUrlUploader($expiration, $options);
 
         if ($this->getStorageApiUri() !== self::STORAGE_API_URI_DEFAULT) {
             list($url, $params) = explode('?', $signedUrl, 2);
