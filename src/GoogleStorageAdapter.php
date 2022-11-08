@@ -152,6 +152,13 @@ class GoogleStorageAdapter extends AbstractAdapter
             $options['metadata'] = $metadata;
         }
 
+        if ($chunkSize = $config->get('chunkSize')) {
+            $options['chunkSize'] = $chunkSize;
+        }
+        if ($uploadProgressCallback = $config->get('uploadProgressCallback')) {
+            $options['uploadProgressCallback'] = $uploadProgressCallback;
+        }
+
         return $options;
     }
 
