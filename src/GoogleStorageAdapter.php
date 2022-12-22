@@ -8,12 +8,13 @@ use Google\Cloud\Storage\Bucket;
 use Google\Cloud\Storage\StorageClient;
 use Google\Cloud\Storage\StorageObject;
 use GuzzleHttp\Psr7\StreamWrapper;
-use League\Flysystem\Adapter\AbstractAdapter;
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
-use League\Flysystem\Util;
+use League\Flysystem\FileAttributes;
+use League\Flysystem\FilesystemAdapter;
+use League\Flysystem\UnableToCopyFile;
+use League\Flysystem\Visibility;
 
-class GoogleStorageAdapter extends AbstractAdapter
+class GoogleStorageAdapter implements FilesystemAdapter
 {
     /**
      * @const STORAGE_API_URI_DEFAULT
@@ -29,6 +30,16 @@ class GoogleStorageAdapter extends AbstractAdapter
      * @var Bucket
      */
     protected $bucket;
+
+    /**
+     * @var string|null path prefix
+     */
+    protected ?string $pathPrefix = null;
+
+    /**
+     * @var string
+     */
+    protected string $pathSeparator = '/';
 
     /**
      * @var string
@@ -51,6 +62,72 @@ class GoogleStorageAdapter extends AbstractAdapter
         }
 
         $this->storageApiUri = ($storageApiUri) ?: self::STORAGE_API_URI_DEFAULT;
+    }
+
+    /**
+     * Prefix a path.
+     *
+     * The method grabbed from class \League\Flysystem\Adapter\AbstractAdapter of league/flysystem:dev-1.0.x.
+     * It is public for the backward compatibility only.
+     */
+    public function applyPathPrefix(string $path): string
+    {
+        return $this->getPathPrefix() . ltrim($path, '\\/');
+    }
+
+    public function fileExists(string $path): bool
+    {
+        return $this->getObject($path)->exists();
+    }
+
+    public function fileSize(string $path): FileAttributes
+    {
+        $metadata = $this->getMetadata($path);
+
+        return new FileAttributes($metadata['path'], $metadata['size']);
+    }
+
+    public function getFileAttributes(string $path): FileAttributes
+    {
+        $metadata = $this->getMetadata($path);
+
+        return new FileAttributes(
+            $metadata['path'],
+            $metadata['size'],
+            $this->getRawVisibility($path),
+            $metadata['timestamp'],
+            $metadata['mimetype'],
+            [
+                'dirname' => $metadata['dirname'],
+                'type' => $metadata['type'],
+            ],
+        );
+    }
+
+    /**
+     * The method grabbed from class \League\Flysystem\Adapter\AbstractAdapter of league/flysystem:dev-1.0.x.
+     * It is public for the backward compatibility only.
+     */
+    public function getPathPrefix(): ?string
+    {
+        return $this->pathPrefix;
+    }
+
+    /**
+     * The method grabbed from class \League\Flysystem\Adapter\AbstractAdapter of league/flysystem:dev-1.0.x.
+     * It is public for the backward compatibility only.
+     */
+    public function setPathPrefix(?string $prefix): void
+    {
+        $prefix = (string) $prefix;
+
+        if ($prefix === '') {
+            $this->pathPrefix = null;
+
+            return;
+        }
+
+        $this->pathPrefix = rtrim($prefix, '\\/') . $this->pathSeparator;
     }
 
     /**
@@ -93,20 +170,48 @@ class GoogleStorageAdapter extends AbstractAdapter
         return $this->storageApiUri;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function write($path, $contents, Config $config)
+    public function lastModified(string $path): FileAttributes
     {
-        return $this->upload($path, $contents, $config);
+        $metadata = $this->getMetadata($path);
+
+        return new FileAttributes($metadata['path'], null, null, $metadata['timestamp']);
+    }
+
+    public function mimeType(string $path): FileAttributes
+    {
+        $metadata = $this->getMetadata($path);
+
+        return new FileAttributes($metadata['path'], null, null, null, $metadata['mimetype']);
+    }
+
+    /**
+     * The method grabbed from class \League\Flysystem\Adapter\AbstractAdapter of league/flysystem:dev-1.0.x.
+     * It is public for the backward compatibility only.
+     */
+    public function removePathPrefix(string $path): string
+    {
+        return substr($path, strlen($this->getPathPrefix()));
+    }
+
+    public function visibility(string $path): FileAttributes
+    {
+        return new FileAttributes($path, null, $this->getRawVisibility($path));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function writeStream($path, $resource, Config $config)
+    public function write(string $path, string $contents, Config $config): void
     {
-        return $this->upload($path, $resource, $config);
+        $this->upload($path, $contents, $config);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function writeStream(string $path, $resource, Config $config): void
+    {
+        $this->upload($path, $resource, $config);
     }
 
     /**
@@ -145,7 +250,7 @@ class GoogleStorageAdapter extends AbstractAdapter
         } else {
             // if a file is created without an acl, it isn't accessible via the console
             // we therefore default to private
-            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(AdapterInterface::VISIBILITY_PRIVATE);
+            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(Visibility::PRIVATE);
         }
 
         if ($metadata = $config->get('metadata')) {
@@ -195,7 +300,7 @@ class GoogleStorageAdapter extends AbstractAdapter
 
         return [
             'type' => $isDir ? 'dir' : 'file',
-            'dirname' => Util::dirname($name),
+            'dirname' => $this->dirname($name),
             'path' => $name,
             'timestamp' => strtotime($info['updated']),
             'mimetype' => isset($info['contentType']) ? $info['contentType'] : '',
@@ -206,19 +311,19 @@ class GoogleStorageAdapter extends AbstractAdapter
     /**
      * {@inheritdoc}
      */
-    public function rename($path, $newpath)
+    public function move(string $source, string $destination, Config $config): void
     {
-        if (!$this->copy($path, $newpath)) {
-            return false;
+        try {
+            $this->copy($source, $destination, $config);
+        } catch (UnableToCopyFile $exception){
+            $this->delete($source);
         }
-
-        return $this->delete($path);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function copy($path, $newpath)
+    public function copy(string $path, string $newpath, Config $config): void
     {
         $newpath = $this->applyPathPrefix($newpath);
 
@@ -229,25 +334,30 @@ class GoogleStorageAdapter extends AbstractAdapter
             'name' => $newpath,
             'predefinedAcl' => $this->getPredefinedAclForVisibility($visibility),
         ];
-        $this->getObject($path)->copy($this->bucket, $options);
-
-        return true;
+        if (!$this->getObject($path)->copy($this->bucket, $options)->exists()) {
+            throw UnableToCopyFile::fromLocationTo($path, $newpath);
+        }
     }
 
     /**
      * {@inheritdoc}
      */
-    public function delete($path)
+    public function delete(string $path): void
     {
         $this->getObject($path)->delete();
-
-        return true;
     }
 
     /**
-     * {@inheritdoc}
+     * @deprecated Use {@see self::deleteDirectory() }
      */
     public function deleteDir($dirname)
+    {
+        @trigger_error(sprintf('Method "%s:deleteDir()" id deprecated. Use "%1$s:deleteDirectory()"', __CLASS__), \E_USER_DEPRECATED);
+
+        $this->deleteDirectory($dirname);
+    }
+
+    public function deleteDirectory(string $dirname): void
     {
         $dirname = $this->normaliseDirName($dirname);
         $objects = $this->listContents($dirname, true);
@@ -275,16 +385,24 @@ class GoogleStorageAdapter extends AbstractAdapter
         foreach ($filtered_objects as $object) {
             $this->delete($object['path']);
         }
+    }
 
-        return true;
+    /**
+     * @deprecated Use {@see self::createDirectory() }
+     */
+    public function createDir($dirname, Config $config)
+    {
+        @trigger_error(sprintf('Method "%s:createDir()" id deprecated. Use "%1$s:createDirectory()"', __CLASS__), \E_USER_DEPRECATED);
+
+        return $this->upload($this->normaliseDirName($dirname), '', $config);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function createDir($dirname, Config $config)
+    public function createDirectory(string $dirname, Config $config): void
     {
-        return $this->upload($this->normaliseDirName($dirname), '', $config);
+        $this->upload($this->normaliseDirName($dirname), '', $config);
     }
 
     /**
@@ -299,45 +417,41 @@ class GoogleStorageAdapter extends AbstractAdapter
         return rtrim($dirname, '/') . '/';
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function setVisibility($path, $visibility)
+    protected function normalizeDirname(string $dirname): string
     {
-        $object = $this->getObject($path);
-
-        if ($visibility === AdapterInterface::VISIBILITY_PRIVATE) {
-            $object->acl()->delete('allUsers');
-        } elseif ($visibility === AdapterInterface::VISIBILITY_PUBLIC) {
-            $object->acl()->add('allUsers', Acl::ROLE_READER);
-        }
-
-        $normalised = $this->normaliseObject($object);
-        $normalised['visibility'] = $visibility;
-
-        return $normalised;
+        return $dirname === '.' ? '' : $dirname;
     }
 
     /**
      * {@inheritdoc}
      */
+    public function setVisibility(string $path, string $visibility): void
+    {
+        $object = $this->getObject($path);
+
+        if ($visibility === Visibility::PRIVATE) {
+            $object->acl()->delete('allUsers');
+        } elseif ($visibility === Visibility::PUBLIC) {
+            $object->acl()->add('allUsers', Acl::ROLE_READER);
+        }
+    }
+
+    /**
+     * @deprecated Use {@see self::fileExists() }
+     */
     public function has($path)
     {
+        @trigger_error(sprintf('Method "%s:has()" id deprecated. Use "%1$s:fileExists()"', __CLASS__), \E_USER_DEPRECATED);
+
         return $this->getObject($path)->exists();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function read($path)
+    public function read(string $path): string
     {
-        $object = $this->getObject($path);
-        $contents = $object->downloadAsString();
-
-        $data = $this->normaliseObject($object);
-        $data['contents'] = $contents;
-
-        return $data;
+        return $this->getObject($path)->downloadAsString();
     }
 
     /**
@@ -347,16 +461,13 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         $object = $this->getObject($path);
 
-        $data = $this->normaliseObject($object);
-        $data['stream'] = StreamWrapper::getResource($object->downloadAsStream());
-
-        return $data;
+        return StreamWrapper::getResource($object->downloadAsStream());
     }
 
     /**
      * {@inheritdoc}
      */
-    public function listContents($directory = '', $recursive = false)
+    public function listContents(string $directory = '', bool $recursive = false): iterable
     {
         $directory = $this->applyPathPrefix($directory);
 
@@ -367,7 +478,7 @@ class GoogleStorageAdapter extends AbstractAdapter
             $normalised[] = $this->normaliseObject($object);
         }
 
-        return Util::emulateDirectories($normalised);
+        return $this->emulateDirectories($normalised);
     }
 
     /**
@@ -380,34 +491,42 @@ class GoogleStorageAdapter extends AbstractAdapter
     }
 
     /**
-     * {@inheritdoc}
+     * @deprecated Use {@see self::fileSize() }
      */
     public function getSize($path)
     {
+        @trigger_error(sprintf('Method "%s:getSize()" id deprecated. Use "%1$s:fileSize()"', __CLASS__), \E_USER_DEPRECATED);
+
         return $this->getMetadata($path);
     }
 
     /**
-     * {@inheritdoc}
+     * @deprecated Use {@see self::mimeType() }
      */
     public function getMimetype($path)
     {
+        @trigger_error(sprintf('Method "%s:getMimetype()" id deprecated. Use "%1$s:mimeType()"', __CLASS__), \E_USER_DEPRECATED);
+
         return $this->getMetadata($path);
     }
 
     /**
-     * {@inheritdoc}
+     * @deprecated Use {@see self::lastModified() }
      */
     public function getTimestamp($path)
     {
+        @trigger_error(sprintf('Method "%s:getTimestamp()" id deprecated. Use "%1$s:lastModified()"', __CLASS__), \E_USER_DEPRECATED);
+
         return $this->getMetadata($path);
     }
 
     /**
-     * {@inheritdoc}
+     * @deprecated Use {@see self::lastModified() }
      */
     public function getVisibility($path)
     {
+        @trigger_error(sprintf('Method "%s:getVisibility()" id deprecated. Use "%1$s:visibility()"', __CLASS__), \E_USER_DEPRECATED);
+
         return [
             'visibility' => $this->getRawVisibility($path),
         ];
@@ -416,7 +535,7 @@ class GoogleStorageAdapter extends AbstractAdapter
     /**
      * Return a public url to a file.
      *
-     * Note: The file must have `AdapterInterface::VISIBILITY_PUBLIC` visibility.
+     * Note: The file must have `Visibility::PUBLIC` visibility.
      *
      * @param string $path
      *
@@ -498,6 +617,96 @@ class GoogleStorageAdapter extends AbstractAdapter
     }
 
     /**
+     * The method grabbed from class \League\Flysystem\Util of league/flysystem:dev-1.0.x.
+     */
+    protected function basename($path)
+    {
+        $separators = DIRECTORY_SEPARATOR === '/' ? '/' : '\/';
+
+        $path = rtrim($path, $separators);
+
+        $basename = preg_replace('#.*?([^' . preg_quote($separators, '#') . ']+$)#', '$1', $path);
+
+        if (DIRECTORY_SEPARATOR === '/') {
+            return $basename;
+        }
+        // @codeCoverageIgnoreStart
+        // Extra Windows path munging. This is tested via AppVeyor, but code
+        // coverage is not reported.
+
+        // Handle relative paths with drive letters. c:file.txt.
+        while (preg_match('#^[a-zA-Z]{1}:[^\\\/]#', $basename)) {
+            $basename = substr($basename, 2);
+        }
+
+        // Remove colon for standalone drive letter names.
+        if (preg_match('#^[a-zA-Z]{1}:$#', $basename)) {
+            $basename = rtrim($basename, ':');
+        }
+
+        return $basename;
+        // @codeCoverageIgnoreEnd
+    }
+
+    /**
+     * The method grabbed from class \League\Flysystem\Util of league/flysystem:dev-1.0.x.
+     */
+    protected function dirname(string $path): string
+    {
+        return $this->normalizeDirname(dirname($path));
+    }
+
+    /**
+     * The method grabbed from class \League\Flysystem\Util of league/flysystem:dev-1.0.x.
+     */
+    protected function emulateDirectories(array $listing): array
+    {
+        $directories = [];
+        $listedDirectories = [];
+
+        foreach ($listing as $object) {
+            [$directories, $listedDirectories] = $this->emulateObjectDirectories($object, $directories, $listedDirectories);
+        }
+
+        $directories = array_diff(array_unique($directories), array_unique($listedDirectories));
+
+        foreach ($directories as $directory) {
+            $listing[] = $this->pathinfo($directory) + ['type' => 'dir'];
+        }
+
+        return $listing;
+    }
+
+    /**
+     * The method grabbed from class \League\Flysystem\Util of league/flysystem:dev-1.0.x.
+     */
+    protected function emulateObjectDirectories(array $object, array $directories, array $listedDirectories): array
+    {
+        if ($object['type'] === 'dir') {
+            $listedDirectories[] = $object['path'];
+        }
+
+        if ( ! isset($object['dirname']) || trim($object['dirname']) === '') {
+            return [$directories, $listedDirectories];
+        }
+
+        $parent = $object['dirname'];
+
+        while (isset($parent) && trim($parent) !== '' && ! \in_array($parent, $directories, true)) {
+            $directories[] = $parent;
+            $parent = $this->dirname($parent);
+        }
+
+        if (isset($object['type']) && $object['type'] === 'dir') {
+            $listedDirectories[] = $object['path'];
+
+            return [$directories, $listedDirectories];
+        }
+
+        return [$directories, $listedDirectories];
+    }
+
+    /**
      * @param string $path
      *
      * @return string
@@ -506,12 +715,10 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         try {
             $acl = $this->getObject($path)->acl()->get(['entity' => 'allUsers']);
-            return $acl['role'] === Acl::ROLE_READER ?
-                AdapterInterface::VISIBILITY_PUBLIC :
-                AdapterInterface::VISIBILITY_PRIVATE;
+            return $acl['role'] === Acl::ROLE_READER ? Visibility::PUBLIC : Visibility::PRIVATE;
         } catch (NotFoundException $e) {
             // object may not have an acl entry, so handle that gracefully
-            return AdapterInterface::VISIBILITY_PRIVATE;
+            return Visibility::PRIVATE;
         }
     }
 
@@ -535,6 +742,24 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     protected function getPredefinedAclForVisibility($visibility)
     {
-        return $visibility === AdapterInterface::VISIBILITY_PUBLIC ? 'publicRead' : 'projectPrivate';
+        return $visibility === Visibility::PUBLIC ? 'publicRead' : 'projectPrivate';
+    }
+
+    /**
+     * The method grabbed from class \League\Flysystem\Util of league/flysystem:dev-1.0.x.
+     */
+    protected function pathinfo($path)
+    {
+        $pathinfo = compact('path');
+
+        if ('' !== $dirname = dirname($path)) {
+            $pathinfo['dirname'] = $this->normalizeDirname($dirname);
+        }
+
+        $pathinfo['basename'] = $this->basename($path);
+
+        $pathinfo += pathinfo($pathinfo['basename']);
+
+        return $pathinfo + ['dirname' => ''];
     }
 }
