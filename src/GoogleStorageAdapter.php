@@ -19,40 +19,15 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * @const STORAGE_API_URI_DEFAULT
      */
-    const STORAGE_API_URI_DEFAULT = 'https://storage.googleapis.com';
+    public const STORAGE_API_URI_DEFAULT = 'https://storage.googleapis.com';
 
-    /**
-     * @var StorageClient
-     */
-    protected $storageClient;
-
-    /**
-     * @var Bucket
-     */
-    protected $bucket;
-
-    /**
-     * @var string|null path prefix
-     */
+    protected StorageClient $storageClient;
+    protected Bucket $bucket;
     protected ?string $pathPrefix = null;
-
-    /**
-     * @var string
-     */
     protected string $pathSeparator = '/';
+    protected string $storageApiUri;
 
-    /**
-     * @var string
-     */
-    protected $storageApiUri;
-
-    /**
-     * @param StorageClient $storageClient
-     * @param Bucket $bucket
-     * @param string $pathPrefix
-     * @param string $storageApiUri
-     */
-    public function __construct(StorageClient $storageClient, Bucket $bucket, $pathPrefix = null, $storageApiUri = null)
+    public function __construct(StorageClient $storageClient, Bucket $bucket, string $pathPrefix = null, string $storageApiUri = null)
     {
         $this->storageClient = $storageClient;
         $this->bucket = $bucket;
@@ -130,42 +105,22 @@ class GoogleStorageAdapter implements FilesystemAdapter
         $this->pathPrefix = rtrim($prefix, '\\/') . $this->pathSeparator;
     }
 
-    /**
-     * Returns the StorageClient.
-     *
-     * @return StorageClient
-     */
-    public function getStorageClient()
+    public function getStorageClient(): StorageClient
     {
         return $this->storageClient;
     }
 
-    /**
-     * Return the Bucket.
-     *
-     * @return \Google\Cloud\Storage\Bucket
-     */
-    public function getBucket()
+    public function getBucket(): Bucket
     {
         return $this->bucket;
     }
 
-    /**
-     * Set the storage api uri.
-     *
-     * @param string $uri
-     */
-    public function setStorageApiUri($uri)
+    public function setStorageApiUri(string $uri): void
     {
         $this->storageApiUri = $uri;
     }
 
-    /**
-     * Return the storage api uri.
-     *
-     * @return string
-     */
-    public function getStorageApiUri()
+    public function getStorageApiUri(): string
     {
         return $this->storageApiUri;
     }
@@ -215,21 +170,17 @@ class GoogleStorageAdapter implements FilesystemAdapter
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @codeCoverageIgnore
      */
-    public function update($path, $contents, Config $config)
+    public function update(string $path, $contents, Config $config): array
     {
         return $this->upload($path, $contents, $config);
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @codeCoverageIgnore
      */
-    public function updateStream($path, $resource, Config $config)
+    public function updateStream(string $path, $resource, Config $config): array
     {
         return $this->upload($path, $resource, $config);
     }
@@ -237,11 +188,9 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * Returns an array of options from the config.
      *
-     * @param Config $config
-     *
-     * @return array
+     * @return array<string,mixed>
      */
-    protected function getOptionsFromConfig(Config $config)
+    protected function getOptionsFromConfig(Config $config): array
     {
         $options = [];
 
@@ -263,13 +212,18 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * Uploads a file to the Google Cloud Storage service.
      *
-     * @param string $path
      * @param string|resource $contents
-     * @param Config $config
      *
-     * @return array
+     * @return array{
+     *      type: string
+     *      dirname: string
+     *      path: string
+     *      timestamp: int
+     *      mimetype: string
+     *      size: int
+     * }
      */
-    protected function upload($path, $contents, Config $config)
+    protected function upload(string $path, $contents, Config $config): array
     {
         $path = $this->applyPathPrefix($path);
 
@@ -284,11 +238,16 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * Returns a dictionary of object metadata from an object.
      *
-     * @param StorageObject $object
-     *
-     * @return array
+     * @return array{
+     *      type: string
+     *      dirname: string
+     *      path: string
+     *      timestamp: int
+     *      mimetype: string
+     *      size: int
+     * }
      */
-    protected function normaliseObject(StorageObject $object)
+    protected function normaliseObject(StorageObject $object): array
     {
         $name = $this->removePathPrefix($object->name());
         $info = $object->info();
@@ -349,8 +308,9 @@ class GoogleStorageAdapter implements FilesystemAdapter
 
     /**
      * @deprecated Use {@see self::deleteDirectory() }
+     * @codeCoverageIgnore
      */
-    public function deleteDir($dirname)
+    public function deleteDir(string $dirname): void
     {
         @trigger_error(sprintf('Method "%s:deleteDir()" id deprecated. Use "%1$s:deleteDirectory()"', __CLASS__), \E_USER_DEPRECATED);
 
@@ -389,8 +349,18 @@ class GoogleStorageAdapter implements FilesystemAdapter
 
     /**
      * @deprecated Use {@see self::createDirectory() }
+     * @codeCoverageIgnore
+     *
+     * @return array{
+     *      type: string
+     *      dirname: string
+     *      path: string
+     *      timestamp: int
+     *      mimetype: string
+     *      size: int
+     * }
      */
-    public function createDir($dirname, Config $config)
+    public function createDir(string $dirname, Config $config): array
     {
         @trigger_error(sprintf('Method "%s:createDir()" id deprecated. Use "%1$s:createDirectory()"', __CLASS__), \E_USER_DEPRECATED);
 
@@ -407,12 +377,8 @@ class GoogleStorageAdapter implements FilesystemAdapter
 
     /**
      * Returns a normalised directory name from the given path.
-     *
-     * @param string $dirname
-     *
-     * @return string
      */
-    protected function normaliseDirName($dirname)
+    protected function normaliseDirName(string $dirname): string
     {
         return rtrim($dirname, '/') . '/';
     }
@@ -438,8 +404,9 @@ class GoogleStorageAdapter implements FilesystemAdapter
 
     /**
      * @deprecated Use {@see self::fileExists() }
+     * @codeCoverageIgnore
      */
-    public function has($path)
+    public function has(string $path): bool
     {
         @trigger_error(sprintf('Method "%s:has()" id deprecated. Use "%1$s:fileExists()"', __CLASS__), \E_USER_DEPRECATED);
 
@@ -457,7 +424,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * {@inheritdoc}
      */
-    public function readStream($path)
+    public function readStream(string $path)
     {
         $object = $this->getObject($path);
 
@@ -482,18 +449,36 @@ class GoogleStorageAdapter implements FilesystemAdapter
     }
 
     /**
-     * {@inheritdoc}
+     * @return array{
+     *      type: string
+     *      dirname: string
+     *      path: string
+     *      timestamp: int
+     *      mimetype: string
+     *      size: int
+     * }
      */
-    public function getMetadata($path)
+    public function getMetadata(string $path): array
     {
         $object = $this->getObject($path);
+
         return $this->normaliseObject($object);
     }
 
     /**
      * @deprecated Use {@see self::fileSize() }
+     * @codeCoverageIgnore
+     *
+     * @return array{
+     *      type: string
+     *      dirname: string
+     *      path: string
+     *      timestamp: int
+     *      mimetype: string
+     *      size: int
+     * }
      */
-    public function getSize($path)
+    public function getSize(string $path): array
     {
         @trigger_error(sprintf('Method "%s:getSize()" id deprecated. Use "%1$s:fileSize()"', __CLASS__), \E_USER_DEPRECATED);
 
@@ -502,8 +487,18 @@ class GoogleStorageAdapter implements FilesystemAdapter
 
     /**
      * @deprecated Use {@see self::mimeType() }
+     * @codeCoverageIgnore
+     *
+     * @return array{
+     *      type: string
+     *      dirname: string
+     *      path: string
+     *      timestamp: int
+     *      mimetype: string
+     *      size: int
+     * }
      */
-    public function getMimetype($path)
+    public function getMimetype(string $path): array
     {
         @trigger_error(sprintf('Method "%s:getMimetype()" id deprecated. Use "%1$s:mimeType()"', __CLASS__), \E_USER_DEPRECATED);
 
@@ -512,8 +507,18 @@ class GoogleStorageAdapter implements FilesystemAdapter
 
     /**
      * @deprecated Use {@see self::lastModified() }
+     * @codeCoverageIgnore
+     *
+     * @return array{
+     *      type: string
+     *      dirname: string
+     *      path: string
+     *      timestamp: int
+     *      mimetype: string
+     *      size: int
+     * }
      */
-    public function getTimestamp($path)
+    public function getTimestamp(string $path): array
     {
         @trigger_error(sprintf('Method "%s:getTimestamp()" id deprecated. Use "%1$s:lastModified()"', __CLASS__), \E_USER_DEPRECATED);
 
@@ -522,8 +527,11 @@ class GoogleStorageAdapter implements FilesystemAdapter
 
     /**
      * @deprecated Use {@see self::lastModified() }
+     * @codeCoverageIgnore
+     *
+     * @return array { visibility: string }
      */
-    public function getVisibility($path)
+    public function getVisibility(string $path): array
     {
         @trigger_error(sprintf('Method "%s:getVisibility()" id deprecated. Use "%1$s:visibility()"', __CLASS__), \E_USER_DEPRECATED);
 
@@ -536,12 +544,8 @@ class GoogleStorageAdapter implements FilesystemAdapter
      * Return a public url to a file.
      *
      * Note: The file must have `Visibility::PUBLIC` visibility.
-     *
-     * @param string $path
-     *
-     * @return string
      */
-    public function getUrl($path)
+    public function getUrl(string $path): string
     {
         $uri = rtrim($this->storageApiUri, '/');
         $path = $this->applyPathPrefix($path);
@@ -563,7 +567,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
 
     /**
      * Get a temporary URL (Signed) for the file at the given path.
-     * @param string $path
+     *
      * @param \DateTimeInterface|int $expiration Specifies when the URL
      *        will expire. May provide an instance of [http://php.net/datetimeimmutable](`\DateTimeImmutable`),
      *        or a UNIX timestamp as an integer.
@@ -601,9 +605,8 @@ class GoogleStorageAdapter implements FilesystemAdapter
      *     @type bool $forceOpenssl If true, OpenSSL will be used regardless of
      *           whether phpseclib is available. **Defaults to** `false`.
      * }
-     * @return string
      */
-    public function getTemporaryUrl($path, $expiration, $options = [])
+    public function getTemporaryUrl(string $path, $expiration, array $options = []): string
     {
         $object = $this->getObject($path);
         $signedUrl = $object->signedUrl($expiration, $options);
@@ -619,7 +622,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * The method grabbed from class \League\Flysystem\Util of league/flysystem:dev-1.0.x.
      */
-    protected function basename($path)
+    protected function basename(string $path): string
     {
         $separators = DIRECTORY_SEPARATOR === '/' ? '/' : '\/';
 
@@ -706,12 +709,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
         return [$directories, $listedDirectories];
     }
 
-    /**
-     * @param string $path
-     *
-     * @return string
-     */
-    protected function getRawVisibility($path)
+    protected function getRawVisibility(string $path): string
     {
         try {
             $acl = $this->getObject($path)->acl()->get(['entity' => 'allUsers']);
@@ -724,23 +722,14 @@ class GoogleStorageAdapter implements FilesystemAdapter
 
     /**
      * Returns a storage object for the given path.
-     *
-     * @param string $path
-     *
-     * @return \Google\Cloud\Storage\StorageObject
      */
-    protected function getObject($path)
+    protected function getObject(string $path): StorageObject
     {
         $path = $this->applyPathPrefix($path);
         return $this->bucket->object($path);
     }
 
-    /**
-     * @param string $visibility
-     *
-     * @return string
-     */
-    protected function getPredefinedAclForVisibility($visibility)
+    protected function getPredefinedAclForVisibility(string $visibility): string
     {
         return $visibility === Visibility::PUBLIC ? 'publicRead' : 'projectPrivate';
     }
@@ -748,7 +737,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * The method grabbed from class \League\Flysystem\Util of league/flysystem:dev-1.0.x.
      */
-    protected function pathinfo($path)
+    protected function pathinfo(string $path): array
     {
         $pathinfo = compact('path');
 

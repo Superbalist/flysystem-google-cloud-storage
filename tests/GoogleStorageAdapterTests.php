@@ -14,7 +14,7 @@ use Superbalist\Flysystem\GoogleStorage\GoogleStorageAdapter;
 
 class GoogleStorageAdapterTests extends TestCase
 {
-    public function testGetStorageClient()
+    public function testGetStorageClient(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -23,7 +23,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertSame($storageClient, $adapter->getStorageClient());
     }
 
-    public function testGetBucket()
+    public function testGetBucket(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -32,7 +32,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertSame($bucket, $adapter->getBucket());
     }
 
-    public function testWrite()
+    public function testWrite(): void
     {
         $bucket = $this->createMock(Bucket::class);
 
@@ -85,7 +85,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals($expected, $adapter->getMetadata('file1.txt'));
     }
 
-    public function testWriteWithPrivateVisibility()
+    public function testWriteWithPrivateVisibility(): void
     {
         $bucket = $this->createMock(Bucket::class);
 
@@ -138,7 +138,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals($expected, $adapter->getMetadata('file1.txt'));
     }
 
-    public function testWriteWithPublicVisibility()
+    public function testWriteWithPublicVisibility(): void
     {
         $bucket = $this->createMock(Bucket::class);
 
@@ -191,7 +191,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals($expected, $adapter->getMetadata('file1.txt'));
     }
 
-    public function testWriteStream()
+    public function testWriteStream(): void
     {
         $stream = tmpfile();
 
@@ -247,7 +247,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals($expected, $adapter->getMetadata('file1.txt'));
     }
 
-    public function testRename()
+    public function testRename(): void
     {
         $bucket = $this->createMock(Bucket::class);
 
@@ -349,7 +349,7 @@ class GoogleStorageAdapterTests extends TestCase
         $adapter->move('old_file.txt', 'new_file.txt', new Config());
     }
 
-    public function testCopy()
+    public function testCopy(): void
     {
         $bucket = $this->createMock(Bucket::class);
 
@@ -397,7 +397,7 @@ class GoogleStorageAdapterTests extends TestCase
         $adapter->copy('old_file.txt', 'new_file.txt', new Config());
     }
 
-    public function testCopyWhenOriginalFileIsPublic()
+    public function testCopyWhenOriginalFileIsPublic(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -444,7 +444,7 @@ class GoogleStorageAdapterTests extends TestCase
         $adapter->copy('old_file.txt', 'new_file.txt', new Config());
     }
 
-    public function testDelete()
+    public function testDelete(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -465,7 +465,7 @@ class GoogleStorageAdapterTests extends TestCase
         $adapter->delete('file.txt');
     }
 
-    public function testDeleteDir()
+    public function testDeleteDir(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -506,7 +506,7 @@ class GoogleStorageAdapterTests extends TestCase
         $adapter->deleteDirectory('dir_name');
     }
 
-    public function testDeleteDirWithTrailingSlash()
+    public function testDeleteDirWithTrailingSlash(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -547,8 +547,7 @@ class GoogleStorageAdapterTests extends TestCase
 
         $adapter->deleteDirectory('dir_name//');
     }
-
-    public function testSetVisibilityPrivate()
+    public function testSetVisibilityPrivate(): void
     {
         $bucket = $this->createMock(Bucket::class);
 
@@ -589,7 +588,7 @@ class GoogleStorageAdapterTests extends TestCase
         $adapter->setVisibility('file1.txt', Visibility::PRIVATE);
     }
 
-    public function testSetVisibilityPublic()
+    public function testSetVisibilityPublic(): void
     {
         $bucket = $this->createMock(Bucket::class);
 
@@ -627,7 +626,7 @@ class GoogleStorageAdapterTests extends TestCase
         $adapter->setVisibility('file1.txt', Visibility::PUBLIC);
     }
 
-    public function testHas()
+    public function testFileExists(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -649,7 +648,7 @@ class GoogleStorageAdapterTests extends TestCase
         self::assertTrue($adapter->fileExists('file.txt'));
     }
 
-    public function testRead()
+    public function testRead(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -679,7 +678,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals('This is the file contents.', $data);
     }
 
-    public function testReadStream()
+    public function testReadStream(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -719,7 +718,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertIsResource($data);
     }
 
-    public function testListContents()
+    public function testListContents(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -829,7 +828,7 @@ class GoogleStorageAdapterTests extends TestCase
         ];
     }
 
-    public function testGetMetadataForFile()
+    public function testGetMetadataForFile(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -870,7 +869,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals($expected, $metadata);
     }
 
-    public function testGetMetadataForDir()
+    public function testGetMetadataForDir(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -911,7 +910,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals($expected, $metadata);
     }
 
-    public function testGetSize()
+    public function testGetSize(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -944,7 +943,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals(5, $metadata['size']);
     }
 
-    public function testGetMimetype()
+    public function testGetMimetype(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -977,7 +976,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals('text/plain', $metadata['mimetype']);
     }
 
-    public function testGetTimestamp()
+    public function testGetTimestamp(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -1010,7 +1009,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals(1474901082, $metadata['timestamp']);
     }
 
-    public function testGetVisibilityWhenVisibilityIsPrivate()
+    public function testGetVisibilityWhenVisibilityIsPrivate(): void
     {
         $bucket = $this->createMock(Bucket::class);
 
@@ -1043,7 +1042,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals(Visibility::PRIVATE, $attributes->visibility());
     }
 
-    public function testGetVisibilityWhenVisibilityIsPublic()
+    public function testGetVisibilityWhenVisibilityIsPublic(): void
     {
         $bucket = $this->createMock(Bucket::class);
 
@@ -1076,7 +1075,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals(Visibility::PUBLIC, $attributes->visibility());
     }
 
-    public function testSetGetStorageApiUri()
+    public function testSetGetStorageApiUri(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -1091,7 +1090,7 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertEquals('http://this.is.my.base.com', $adapter->getStorageApiUri());
     }
 
-    public function testGetUrl()
+    public function testGetUrl(): void
     {
         $storageClient = $this->createMock(StorageClient::class);
 
