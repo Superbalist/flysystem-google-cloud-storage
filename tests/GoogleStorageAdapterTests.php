@@ -32,8 +32,15 @@ class GoogleStorageAdapterTests extends TestCase
         $this->assertSame($bucket, $adapter->getBucket());
     }
 
-    public function testWrite(): void
-    {
+    /**
+     * @dataProvider getDataForTestWriteContent
+     */
+    public function testWriteContent(
+        array $expected,
+        string $contents,
+        string $predefinedAcl,
+        ?string $visibility
+    ): void {
         $bucket = $this->createMock(Bucket::class);
 
         $storageObject = $this->createMock(StorageObject::class);
@@ -54,10 +61,10 @@ class GoogleStorageAdapterTests extends TestCase
             ->expects($this->once())
             ->method('upload')
             ->with(
-                'This is the file contents.',
+                $contents,
                 [
                     'name' => 'prefix/file1.txt',
-                    'predefinedAcl' => 'projectPrivate',
+                    'predefinedAcl' => $predefinedAcl,
                 ],
             )
             ->willReturn($storageObject);
@@ -72,122 +79,13 @@ class GoogleStorageAdapterTests extends TestCase
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $adapter->write('file1.txt', 'This is the file contents.', new Config());
+        $configOptions = [];
+        if ($visibility) {
+            $configOptions['visibility'] = $visibility;
+        }
 
-        $expected = [
-            'type' => 'file',
-            'dirname' => '',
-            'path' => 'file1.txt',
-            'timestamp' => 1474901082,
-            'mimetype' => 'text/plain',
-            'size' => 5,
-        ];
-        $this->assertEquals($expected, $adapter->getMetadata('file1.txt'));
-    }
+        $adapter->write('file1.txt', 'This is the file contents.', new Config($configOptions));
 
-    public function testWriteWithPrivateVisibility(): void
-    {
-        $bucket = $this->createMock(Bucket::class);
-
-        $storageObject = $this->createMock(StorageObject::class);
-        $storageObject
-            ->expects($this->exactly(2))
-            ->method('name')
-            ->willReturn('prefix/file1.txt');
-        $storageObject
-            ->expects($this->exactly(2))
-            ->method('info')
-            ->willReturn([
-                'updated' => '2016-09-26T14:44:42+00:00',
-                'contentType' => 'text/plain',
-                'size' => 5,
-            ]);
-
-        $bucket
-            ->expects($this->once())
-            ->method('upload')
-            ->with(
-                'This is the file contents.',
-                [
-                    'name' => 'prefix/file1.txt',
-                    'predefinedAcl' => 'projectPrivate',
-                ]
-            )
-            ->willReturn($storageObject);
-
-        $bucket
-            ->expects($this->once())
-            ->method('object')
-            ->with('prefix/file1.txt', [])
-            ->willReturn($storageObject);
-
-        $storageClient = $this->createMock(StorageClient::class);
-
-        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
-
-        $adapter->write('file1.txt', 'This is the file contents.', new Config(['visibility' => Visibility::PRIVATE]));
-
-        $expected = [
-            'type' => 'file',
-            'dirname' => '',
-            'path' => 'file1.txt',
-            'timestamp' => 1474901082,
-            'mimetype' => 'text/plain',
-            'size' => 5,
-        ];
-        $this->assertEquals($expected, $adapter->getMetadata('file1.txt'));
-    }
-
-    public function testWriteWithPublicVisibility(): void
-    {
-        $bucket = $this->createMock(Bucket::class);
-
-        $storageObject = $this->createMock(StorageObject::class);
-        $storageObject
-            ->expects($this->exactly(2))
-            ->method('name')
-            ->willReturn('prefix/file1.txt');
-        $storageObject
-            ->expects($this->exactly(2))
-            ->method('info')
-            ->willReturn([
-                'updated' => '2016-09-26T14:44:42+00:00',
-                'contentType' => 'text/plain',
-                'size' => 5,
-            ]);
-
-        $bucket
-            ->expects($this->once())
-            ->method('upload')
-            ->with(
-                'This is the file contents.',
-                [
-                    'name' => 'prefix/file1.txt',
-                    'predefinedAcl' => 'publicRead',
-                ],
-            )
-            ->willReturn($storageObject);
-
-        $bucket
-            ->expects($this->once())
-            ->method('object')
-            ->with('prefix/file1.txt', [])
-            ->willReturn($storageObject);
-
-        $storageClient = $this->createMock(StorageClient::class);
-
-        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
-
-        $adapter->write('file1.txt', 'This is the file contents.', new Config(['visibility' => Visibility::PUBLIC]));
-
-        $expected = [
-            'type' => 'file',
-            'dirname' => '',
-            'path' => 'file1.txt',
-            'timestamp' => 1474901082,
-            'mimetype' => 'text/plain',
-            'size' => 5,
-        ];
         $this->assertEquals($expected, $adapter->getMetadata('file1.txt'));
     }
 
@@ -465,7 +363,10 @@ class GoogleStorageAdapterTests extends TestCase
         $adapter->delete('file.txt');
     }
 
-    public function testDeleteDir(): void
+    /**
+     * @dataProvider getDataForTestDeleteDirectory
+     */
+    public function testDeleteDirectory(string $path): void
     {
         $storageClient = $this->createMock(StorageClient::class);
         $bucket = $this->createMock(Bucket::class);
@@ -497,56 +398,15 @@ class GoogleStorageAdapterTests extends TestCase
             ->expects($this->once())
             ->method('objects')
             ->with([
-                'prefix' => 'prefix/dir_name/'
+                'prefix' => 'prefix/dir_name/',
             ])
             ->willReturn([$storageObject]);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $adapter->deleteDirectory('dir_name');
+        $adapter->deleteDirectory($path);
     }
 
-    public function testDeleteDirWithTrailingSlash(): void
-    {
-        $storageClient = $this->createMock(StorageClient::class);
-        $bucket = $this->createMock(Bucket::class);
-
-        $storageObject = $this->createMock(StorageObject::class);
-        $storageObject
-            ->expects($this->exactly(3))
-            ->method('delete');
-
-        $storageObject
-            ->expects($this->once())
-            ->method('name')
-            ->willReturn('prefix/dir_name/directory1/file1.txt', []);
-        $storageObject
-            ->expects($this->once())
-            ->method('info')
-            ->willReturn([
-                'updated' => '2016-09-26T14:44:42+00:00',
-                'contentType' => 'text/plain',
-                'size' => 5,
-            ]);
-
-        $bucket
-            ->expects($this->exactly(3))
-            ->method('object')
-            ->withConsecutive(['prefix/dir_name/directory1/file1.txt', []], ['prefix/dir_name/directory1/', []], ['prefix/dir_name/', []])
-            ->willReturnOnConsecutiveCalls($storageObject, $storageObject, $storageObject);
-
-        $bucket
-            ->expects($this->once())
-            ->method('objects')
-            ->with([
-                'prefix' => 'prefix/dir_name/'
-            ])
-            ->willReturn([$storageObject]);
-
-        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
-
-        $adapter->deleteDirectory('dir_name//');
-    }
     public function testSetVisibilityPrivate(): void
     {
         $bucket = $this->createMock(Bucket::class);
@@ -1111,5 +971,28 @@ class GoogleStorageAdapterTests extends TestCase
         $adapter->setPathPrefix('another-prefix');
         // no bucket name on custom domain
         $this->assertEquals('http://my-domain.com/another-prefix/dir/file.txt', $adapter->getUrl('dir/file.txt'));
+    }
+
+    public function getDataForTestDeleteDirectory(): iterable
+    {
+        yield ['dir_name'];
+        yield ['dir_name//'];
+    }
+
+    public function getDataForTestWriteContent(): iterable
+    {
+        $contents = 'This is the file contents.';
+        $expected = [
+            'type' => 'file',
+            'dirname' => '',
+            'path' => 'file1.txt',
+            'timestamp' => 1474901082,
+            'mimetype' => 'text/plain',
+            'size' => 5,
+        ];
+
+        yield [$expected, $contents, 'projectPrivate', null];
+        yield [$expected, $contents, 'projectPrivate', Visibility::PRIVATE];
+        yield [$expected, $contents, 'publicRead', Visibility::PUBLIC];
     }
 }

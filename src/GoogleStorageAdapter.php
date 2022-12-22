@@ -16,9 +16,6 @@ use League\Flysystem\Visibility;
 
 class GoogleStorageAdapter implements FilesystemAdapter
 {
-    /**
-     * @const STORAGE_API_URI_DEFAULT
-     */
     public const STORAGE_API_URI_DEFAULT = 'https://storage.googleapis.com';
 
     protected StorageClient $storageClient;
@@ -27,8 +24,12 @@ class GoogleStorageAdapter implements FilesystemAdapter
     protected string $pathSeparator = '/';
     protected string $storageApiUri;
 
-    public function __construct(StorageClient $storageClient, Bucket $bucket, string $pathPrefix = null, string $storageApiUri = null)
-    {
+    public function __construct(
+        StorageClient $storageClient,
+        Bucket $bucket,
+        string $pathPrefix = null,
+        string $storageApiUri = null
+    ) {
         $this->storageClient = $storageClient;
         $this->bucket = $bucket;
 
@@ -164,9 +165,9 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * {@inheritdoc}
      */
-    public function writeStream(string $path, $resource, Config $config): void
+    public function writeStream(string $path, $contents, Config $config): void
     {
-        $this->upload($path, $resource, $config);
+        $this->upload($path, $contents, $config);
     }
 
     /**
@@ -193,14 +194,10 @@ class GoogleStorageAdapter implements FilesystemAdapter
     protected function getOptionsFromConfig(Config $config): array
     {
         $options = [];
-
-        if ($visibility = $config->get('visibility')) {
-            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility($visibility);
-        } else {
-            // if a file is created without an acl, it isn't accessible via the console
-            // we therefore default to private
-            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(Visibility::PRIVATE);
-        }
+        // if a file is created without an acl, it isn't accessible via the console
+        // we therefore default to private
+        $visibility = $config->get('visibility') ?: Visibility::PRIVATE;
+        $options['predefinedAcl'] = $this->getPredefinedAclForVisibility($visibility);
 
         if ($metadata = $config->get('metadata')) {
             $options['metadata'] = $metadata;
@@ -262,7 +259,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
             'dirname' => $this->dirname($name),
             'path' => $name,
             'timestamp' => strtotime($info['updated']),
-            'mimetype' => isset($info['contentType']) ? $info['contentType'] : '',
+            'mimetype' => $info['contentType'] ?? '',
             'size' => $info['size'],
         ];
     }
@@ -274,7 +271,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
     {
         try {
             $this->copy($source, $destination, $config);
-        } catch (UnableToCopyFile $exception){
+        } catch (UnableToCopyFile $exception) {
             $this->delete($source);
         }
     }
@@ -282,19 +279,19 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * {@inheritdoc}
      */
-    public function copy(string $path, string $newpath, Config $config): void
+    public function copy(string $source, string $destination, Config $config): void
     {
-        $newpath = $this->applyPathPrefix($newpath);
+        $destination = $this->applyPathPrefix($destination);
 
         // we want the new file to have the same visibility as the original file
-        $visibility = $this->getRawVisibility($path);
+        $visibility = $this->getRawVisibility($source);
 
         $options = [
-            'name' => $newpath,
+            'name' => $destination,
             'predefinedAcl' => $this->getPredefinedAclForVisibility($visibility),
         ];
-        if (!$this->getObject($path)->copy($this->bucket, $options)->exists()) {
-            throw UnableToCopyFile::fromLocationTo($path, $newpath);
+        if (!$this->getObject($source)->copy($this->bucket, $options)->exists()) {
+            throw UnableToCopyFile::fromLocationTo($source, $destination);
         }
     }
 
@@ -317,14 +314,14 @@ class GoogleStorageAdapter implements FilesystemAdapter
         $this->deleteDirectory($dirname);
     }
 
-    public function deleteDirectory(string $dirname): void
+    public function deleteDirectory(string $path): void
     {
-        $dirname = $this->normaliseDirName($dirname);
-        $objects = $this->listContents($dirname, true);
+        $path = $this->normalizeDirPostfix($path);
+        $objects = $this->listContents($path, true);
 
         // We first delete the file, so that we can delete
         // the empty folder at the end.
-        uasort($objects, function ($a, $b) {
+        uasort($objects, static function (array $a, array $b): int {
             return $b['type'] === 'file' ? 1 : -1;
         });
 
@@ -333,10 +330,10 @@ class GoogleStorageAdapter implements FilesystemAdapter
         foreach ($objects as $object) {
             // normalise directories path
             if ($object['type'] === 'dir') {
-                $object['path'] = $this->normaliseDirName($object['path']);
+                $object['path'] = $this->normalizeDirPostfix($object['path']);
             }
 
-            if (strpos($object['path'], $dirname) !== false) {
+            if (strpos($object['path'], $path) !== false) {
                 $filtered_objects[] = $object;
             }
         }
@@ -364,28 +361,15 @@ class GoogleStorageAdapter implements FilesystemAdapter
     {
         @trigger_error(sprintf('Method "%s:createDir()" id deprecated. Use "%1$s:createDirectory()"', __CLASS__), \E_USER_DEPRECATED);
 
-        return $this->upload($this->normaliseDirName($dirname), '', $config);
+        return $this->upload($this->normalizeDirPostfix($dirname), '', $config);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function createDirectory(string $dirname, Config $config): void
+    public function createDirectory(string $path, Config $config): void
     {
-        $this->upload($this->normaliseDirName($dirname), '', $config);
-    }
-
-    /**
-     * Returns a normalised directory name from the given path.
-     */
-    protected function normaliseDirName(string $dirname): string
-    {
-        return rtrim($dirname, '/') . '/';
-    }
-
-    protected function normalizeDirname(string $dirname): string
-    {
-        return $dirname === '.' ? '' : $dirname;
+        $this->upload($this->normalizeDirPostfix($path), '', $config);
     }
 
     /**
@@ -434,11 +418,11 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * {@inheritdoc}
      */
-    public function listContents(string $directory = '', bool $recursive = false): iterable
+    public function listContents(string $path = '', bool $deep = false): iterable
     {
-        $directory = $this->applyPathPrefix($directory);
+        $path = $this->applyPathPrefix($path);
 
-        $objects = $this->bucket->objects(['prefix' => $directory]);
+        $objects = $this->bucket->objects(['prefix' => $path]);
 
         $normalised = [];
         foreach ($objects as $object) {
@@ -612,7 +596,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
         $signedUrl = $object->signedUrl($expiration, $options);
 
         if ($this->getStorageApiUri() !== self::STORAGE_API_URI_DEFAULT) {
-            list($url, $params) = explode('?', $signedUrl, 2);
+            [, $params] = explode('?', $signedUrl, 2);
             $signedUrl = $this->getUrl($path) . '?' . $params;
         }
 
@@ -638,12 +622,12 @@ class GoogleStorageAdapter implements FilesystemAdapter
         // coverage is not reported.
 
         // Handle relative paths with drive letters. c:file.txt.
-        while (preg_match('#^[a-zA-Z]{1}:[^\\\/]#', $basename)) {
+        while (preg_match('#^[a-zA-Z]:[^\\\/]#', $basename)) {
             $basename = substr($basename, 2);
         }
 
         // Remove colon for standalone drive letter names.
-        if (preg_match('#^[a-zA-Z]{1}:$#', $basename)) {
+        if (preg_match('#^[a-zA-Z]:$#', $basename)) {
             $basename = rtrim($basename, ':');
         }
 
@@ -656,7 +640,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
      */
     protected function dirname(string $path): string
     {
-        return $this->normalizeDirname(dirname($path));
+        return $this->normalizeDotName(dirname($path));
     }
 
     /**
@@ -674,7 +658,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
         $directories = array_diff(array_unique($directories), array_unique($listedDirectories));
 
         foreach ($directories as $directory) {
-            $listing[] = $this->pathinfo($directory) + ['type' => 'dir'];
+            $listing[] = $this->getPathInfo($directory) + ['type' => 'dir'];
         }
 
         return $listing;
@@ -689,13 +673,13 @@ class GoogleStorageAdapter implements FilesystemAdapter
             $listedDirectories[] = $object['path'];
         }
 
-        if ( ! isset($object['dirname']) || trim($object['dirname']) === '') {
+        if (!isset($object['dirname']) || trim($object['dirname']) === '') {
             return [$directories, $listedDirectories];
         }
 
         $parent = $object['dirname'];
 
-        while (isset($parent) && trim($parent) !== '' && ! \in_array($parent, $directories, true)) {
+        while ($parent && trim($parent) !== '' && !\in_array($parent, $directories, true)) {
             $directories[] = $parent;
             $parent = $this->dirname($parent);
         }
@@ -713,6 +697,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
     {
         try {
             $acl = $this->getObject($path)->acl()->get(['entity' => 'allUsers']);
+
             return $acl['role'] === Acl::ROLE_READER ? Visibility::PUBLIC : Visibility::PRIVATE;
         } catch (NotFoundException $e) {
             // object may not have an acl entry, so handle that gracefully
@@ -726,6 +711,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
     protected function getObject(string $path): StorageObject
     {
         $path = $this->applyPathPrefix($path);
+
         return $this->bucket->object($path);
     }
 
@@ -737,18 +723,30 @@ class GoogleStorageAdapter implements FilesystemAdapter
     /**
      * The method grabbed from class \League\Flysystem\Util of league/flysystem:dev-1.0.x.
      */
-    protected function pathinfo(string $path): array
+    protected function getPathInfo(string $path): array
     {
         $pathinfo = compact('path');
 
         if ('' !== $dirname = dirname($path)) {
-            $pathinfo['dirname'] = $this->normalizeDirname($dirname);
+            $pathinfo['dirname'] = $this->normalizeDotName($dirname);
         }
 
         $pathinfo['basename'] = $this->basename($path);
-
         $pathinfo += pathinfo($pathinfo['basename']);
 
         return $pathinfo + ['dirname' => ''];
+    }
+
+    /**
+     * Returns a normalised directory name from the given path.
+     */
+    protected function normalizeDirPostfix(string $dirname): string
+    {
+        return rtrim($dirname, '/') . '/';
+    }
+
+    protected function normalizeDotName(string $dirname): string
+    {
+        return $dirname === '.' ? '' : $dirname;
     }
 }
