@@ -8,25 +8,26 @@
          convertWarningsToExceptions="true"
          processIsolation="false"
          stopOnFailure="false"
-         syntaxCheck="true"
          verbose="true"
         >
+
     <testsuites>
         <testsuite name="flysystem/tests">
             <directory suffix=".php">./tests/</directory>
         </testsuite>
     </testsuites>
-    <filter>
-        <whitelist>
-            <directory suffix=".php">./src/</directory>
-        </whitelist>
-    </filter>
-    <listeners>
-        <listener class="Mockery\Adapter\Phpunit\TestListener" file="./vendor/mockery/mockery/library/Mockery/Adapter/Phpunit/TestListener.php"></listener>
-    </listeners>
+
+    <coverage processUncoveredFiles="true">
+        <include>
+            <directory suffix=".php">src</directory>
+        </include>
+    </coverage>
+
+    <!--
     <logging>
         <log type="coverage-text" target="php://stdout" showUncoveredFiles="true"/>
         <log type="coverage-html" target="coverage" showUncoveredFiles="true"/>
         <log type="coverage-clover" target="coverage.xml" showUncoveredFiles="true"/>
     </logging>
+    -->
 </phpunit>

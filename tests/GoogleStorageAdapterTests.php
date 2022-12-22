@@ -1,203 +1,163 @@
 <?php
 
-namespace Tests;
+namespace Superbalist\Flysystem\GoogleStorage\Test;
 
 use Google\Cloud\Storage\Acl;
 use Google\Cloud\Storage\Bucket;
 use Google\Cloud\Storage\StorageClient;
 use Google\Cloud\Storage\StorageObject;
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
-use Mockery;
+use League\Flysystem\Visibility;
+use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\StreamInterface;
 use Superbalist\Flysystem\GoogleStorage\GoogleStorageAdapter;
 
-class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
+class GoogleStorageAdapterTests extends TestCase
 {
-    public function testGetStorageClient()
+    public function testDirectoryExists(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
+
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('exists')
+            ->willReturn(true);
+
+        $storageObject
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn('dir_name/');
+
+        $bucket
+            ->expects($this->once())
+            ->method('object')
+            ->with('prefix/dir_name')
+            ->willReturn($storageObject);
+
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
+
+        self::assertTrue($adapter->directoryExists('dir_name'));
+    }
+
+    public function testGetStorageClient(): void
+    {
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
         $adapter = new GoogleStorageAdapter($storageClient, $bucket);
 
         $this->assertSame($storageClient, $adapter->getStorageClient());
     }
 
-    public function testGetBucket()
+    public function testGetBucket(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
         $adapter = new GoogleStorageAdapter($storageClient, $bucket);
 
         $this->assertSame($bucket, $adapter->getBucket());
     }
 
-    public function testWrite()
-    {
-        $bucket = Mockery::mock(Bucket::class);
+    /**
+     * @dataProvider getDataForTestWriteContent
+     */
+    public function testWriteContent(
+        array $expected,
+        string $contents,
+        string $predefinedAcl,
+        ?string $visibility
+    ): void {
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file1.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->exactly(2))
+            ->method('name')
+            ->willReturn('prefix/file1.txt');
+        $storageObject
+            ->expects($this->exactly(2))
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
 
-        $bucket->shouldReceive('upload')
-            ->withArgs([
-                'This is the file contents.',
+        $bucket
+            ->expects($this->once())
+            ->method('upload')
+            ->with(
+                $contents,
                 [
                     'name' => 'prefix/file1.txt',
-                    'predefinedAcl' => 'projectPrivate',
+                    'predefinedAcl' => $predefinedAcl,
                 ],
-            ])
-            ->once()
-            ->andReturn($storageObject);
+            )
+            ->willReturn($storageObject);
 
-        $storageClient = Mockery::mock(StorageClient::class);
+        $bucket
+            ->expects($this->once())
+            ->method('object')
+            ->with('prefix/file1.txt', [])
+            ->willReturn($storageObject);
+
+        $storageClient = $this->createMock(StorageClient::class);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $data = $adapter->write('file1.txt', 'This is the file contents.', new Config());
+        $configOptions = [];
+        if ($visibility) {
+            $configOptions['visibility'] = $visibility;
+        }
 
-        $expected = [
-            'type' => 'file',
-            'dirname' => '',
-            'path' => 'file1.txt',
-            'timestamp' => 1474901082,
-            'mimetype' => 'text/plain',
-            'size' => 5,
-        ];
-        $this->assertEquals($expected, $data);
+        $adapter->write('file1.txt', 'This is the file contents.', new Config($configOptions));
+
+        $this->assertEquals($expected, $adapter->getMetadata('file1.txt'));
     }
 
-    public function testWriteWithPrivateVisibility()
-    {
-        $bucket = Mockery::mock(Bucket::class);
-
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file1.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
-                'updated' => '2016-09-26T14:44:42+00:00',
-                'contentType' => 'text/plain',
-                'size' => 5,
-            ]);
-
-        $bucket->shouldReceive('upload')
-            ->withArgs([
-                'This is the file contents.',
-                [
-                    'name' => 'prefix/file1.txt',
-                    'predefinedAcl' => 'projectPrivate',
-                ],
-            ])
-            ->once()
-            ->andReturn($storageObject);
-
-        $storageClient = Mockery::mock(StorageClient::class);
-
-        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
-
-        $data = $adapter->write('file1.txt', 'This is the file contents.', new Config(['visibility' => AdapterInterface::VISIBILITY_PRIVATE]));
-
-        $expected = [
-            'type' => 'file',
-            'dirname' => '',
-            'path' => 'file1.txt',
-            'timestamp' => 1474901082,
-            'mimetype' => 'text/plain',
-            'size' => 5,
-        ];
-        $this->assertEquals($expected, $data);
-    }
-
-    public function testWriteWithPublicVisibility()
-    {
-        $bucket = Mockery::mock(Bucket::class);
-
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file1.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
-                'updated' => '2016-09-26T14:44:42+00:00',
-                'contentType' => 'text/plain',
-                'size' => 5,
-            ]);
-
-        $bucket->shouldReceive('upload')
-            ->withArgs([
-                'This is the file contents.',
-                [
-                    'name' => 'prefix/file1.txt',
-                    'predefinedAcl' => 'publicRead',
-                ],
-            ])
-            ->once()
-            ->andReturn($storageObject);
-
-        $storageClient = Mockery::mock(StorageClient::class);
-
-        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
-
-        $data = $adapter->write('file1.txt', 'This is the file contents.', new Config(['visibility' => AdapterInterface::VISIBILITY_PUBLIC]));
-
-        $expected = [
-            'type' => 'file',
-            'dirname' => '',
-            'path' => 'file1.txt',
-            'timestamp' => 1474901082,
-            'mimetype' => 'text/plain',
-            'size' => 5,
-        ];
-        $this->assertEquals($expected, $data);
-    }
-
-    public function testWriteStream()
+    public function testWriteStream(): void
     {
         $stream = tmpfile();
 
-        $bucket = Mockery::mock(Bucket::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file1.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->exactly(2))
+            ->method('name')
+            ->willReturn('prefix/file1.txt');
+        $storageObject
+            ->expects($this->exactly(2))
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
 
-        $bucket->shouldReceive('upload')
-            ->withArgs([
+        $bucket->expects($this->once())
+            ->method('upload')
+            ->with(
                 $stream,
                 [
                     'name' => 'prefix/file1.txt',
                     'predefinedAcl' => 'projectPrivate',
                 ],
-            ])
-            ->once()
-            ->andReturn($storageObject);
+            )
+            ->willReturn($storageObject);
 
-        $storageClient = Mockery::mock(StorageClient::class);
+        $bucket
+            ->expects($this->once())
+            ->method('object')
+            ->with('prefix/file1.txt', [])
+            ->willReturn($storageObject);
+
+        $storageClient = $this->createMock(StorageClient::class);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $data = $adapter->writeStream('file1.txt', $stream, new Config());
+        $adapter->writeStream('file1.txt', $stream, new Config());
 
         fclose($stream);
 
@@ -209,419 +169,456 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
             'mimetype' => 'text/plain',
             'size' => 5,
         ];
-        $this->assertEquals($expected, $data);
+        $this->assertEquals($expected, $adapter->getMetadata('file1.txt'));
     }
 
-    public function testRename()
+    public function testRename(): void
     {
-        $bucket = Mockery::mock(Bucket::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $oldStorageObjectAcl = Mockery::mock(Acl::class);
-        $oldStorageObjectAcl->shouldReceive('get')
+        $oldStorageObjectAcl = $this->createMock(Acl::class);
+        $oldStorageObjectAcl
+            ->expects($this->once())
+            ->method('get')
             ->with(['entity' => 'allUsers'])
-            ->once()
-            ->andReturn([
+            ->willReturn([
                 'role' => Acl::ROLE_OWNER,
             ]);
 
-        $oldStorageObject = Mockery::mock(StorageObject::class);
-        $oldStorageObject->shouldReceive('acl')
-            ->once()
-            ->andReturn($oldStorageObjectAcl);
-        $oldStorageObject->shouldReceive('copy')
-            ->withArgs([
+        $newStorageObject = $this->createMock(StorageObject::class);
+        $newStorageObject
+            ->method('exists')
+            ->willReturn(true);
+
+        $oldStorageObject = $this->createMock(StorageObject::class);
+        $oldStorageObject
+            ->expects($this->once())
+            ->method('acl')
+            ->willReturn($oldStorageObjectAcl);
+        $oldStorageObject
+            ->expects($this->once())
+            ->method('copy')
+            ->with(
                 $bucket,
                 [
                     'name' => 'prefix/new_file.txt',
                     'predefinedAcl' => 'projectPrivate',
                 ],
-            ])
-            ->once();
-        $oldStorageObject->shouldReceive('delete')
-            ->once();
+            )
+            ->willReturn($newStorageObject);
+        $oldStorageObject
+            ->expects($this->exactly(0))
+            ->method('delete');
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->exactly(2))
+            ->method('object')
             ->with('prefix/old_file.txt')
-            ->times(3)
-            ->andReturn($oldStorageObject);
+            ->willReturn($oldStorageObject);
 
-        $storageClient = Mockery::mock(StorageClient::class);
+        $storageClient = $this->createMock(StorageClient::class);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $adapter->rename('old_file.txt', 'new_file.txt');
+        $adapter->move('old_file.txt', 'new_file.txt', new Config());
     }
 
-    public function testCopy()
+    public function testDeleteOnRename(): void
     {
-        $bucket = Mockery::mock(Bucket::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $oldStorageObjectAcl = Mockery::mock(Acl::class);
-        $oldStorageObjectAcl->shouldReceive('get')
+        $oldStorageObjectAcl = $this->createMock(Acl::class);
+        $oldStorageObjectAcl
+            ->expects($this->once())
+            ->method('get')
             ->with(['entity' => 'allUsers'])
-            ->once()
-            ->andReturn([
+            ->willReturn([
                 'role' => Acl::ROLE_OWNER,
             ]);
 
-        $oldStorageObject = Mockery::mock(StorageObject::class);
-        $oldStorageObject->shouldReceive('acl')
-            ->once()
-            ->andReturn($oldStorageObjectAcl);
-        $oldStorageObject->shouldReceive('copy')
-            ->withArgs([
+        $newStorageObject = $this->createMock(StorageObject::class);
+        $newStorageObject
+            ->method('exists')
+            ->willReturn(false);
+
+        $oldStorageObject = $this->createMock(StorageObject::class);
+        $oldStorageObject
+            ->expects($this->once())
+            ->method('acl')
+            ->willReturn($oldStorageObjectAcl);
+        $oldStorageObject
+            ->expects($this->once())
+            ->method('copy')
+            ->with(
                 $bucket,
                 [
                     'name' => 'prefix/new_file.txt',
                     'predefinedAcl' => 'projectPrivate',
                 ],
-            ])
-            ->once();
+            )
+            ->willReturn($newStorageObject);
+        $oldStorageObject
+            ->expects($this->once())
+            ->method('delete');
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->exactly(3))
+            ->method('object')
             ->with('prefix/old_file.txt')
-            ->times(2)
-            ->andReturn($oldStorageObject);
+            ->willReturn($oldStorageObject);
 
-        $storageClient = Mockery::mock(StorageClient::class);
+        $storageClient = $this->createMock(StorageClient::class);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $adapter->copy('old_file.txt', 'new_file.txt');
+        $adapter->move('old_file.txt', 'new_file.txt', new Config());
     }
 
-    public function testCopyWhenOriginalFileIsPublic()
+    public function testCopy(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $oldStorageObjectAcl = Mockery::mock(Acl::class);
-        $oldStorageObjectAcl->shouldReceive('get')
+        $oldStorageObjectAcl = $this->createMock(Acl::class);
+        $oldStorageObjectAcl
+            ->expects($this->once())
+            ->method('get')
             ->with(['entity' => 'allUsers'])
-            ->once()
-            ->andReturn([
+            ->willReturn([
+                'role' => Acl::ROLE_OWNER,
+            ]);
+
+        $newStorageObject = $this->createMock(StorageObject::class);
+        $newStorageObject
+            ->method('exists')
+            ->willReturn(true);
+
+        $oldStorageObject = $this->createMock(StorageObject::class);
+        $oldStorageObject
+            ->expects($this->once())
+            ->method('acl')
+            ->willReturn($oldStorageObjectAcl);
+        $oldStorageObject
+            ->expects($this->once())
+            ->method('copy')
+            ->with(
+                $bucket,
+                [
+                    'name' => 'prefix/new_file.txt',
+                    'predefinedAcl' => 'projectPrivate',
+                ],
+            )
+            ->willReturn($newStorageObject);
+
+        $bucket
+            ->expects($this->exactly(2))
+            ->method('object')
+            ->with('prefix/old_file.txt')
+            ->willReturn($oldStorageObject);
+
+        $storageClient = $this->createMock(StorageClient::class);
+
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
+
+        $adapter->copy('old_file.txt', 'new_file.txt', new Config());
+    }
+
+    public function testCopyWhenOriginalFileIsPublic(): void
+    {
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
+
+        $oldStorageObjectAcl = $this->createMock(Acl::class);
+        $oldStorageObjectAcl
+            ->expects($this->once())
+            ->method('get')
+            ->with(['entity' => 'allUsers'])
+            ->willReturn([
                 'role' => Acl::ROLE_READER,
             ]);
 
-        $oldStorageObject = Mockery::mock(StorageObject::class);
-        $oldStorageObject->shouldReceive('acl')
-            ->once()
-            ->andReturn($oldStorageObjectAcl);
-        $oldStorageObject->shouldReceive('copy')
-            ->withArgs([
+        $newStorageObject = $this->createMock(StorageObject::class);
+        $newStorageObject
+            ->method('exists')
+            ->willReturn(true);
+
+        $oldStorageObject = $this->createMock(StorageObject::class);
+        $oldStorageObject
+            ->expects($this->once())
+            ->method('acl')
+            ->willReturn($oldStorageObjectAcl);
+        $oldStorageObject
+            ->expects($this->once())
+            ->method('copy')
+            ->with(
                 $bucket,
                 [
                     'name' => 'prefix/new_file.txt',
                     'predefinedAcl' => 'publicRead',
                 ],
-            ])
-            ->once();
+            )
+            ->willReturn($newStorageObject);
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->exactly(2))
+            ->method('object')
             ->with('prefix/old_file.txt')
-            ->times(2)
-            ->andReturn($oldStorageObject);
+            ->willReturn($oldStorageObject);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $adapter->copy('old_file.txt', 'new_file.txt');
+        $adapter->copy('old_file.txt', 'new_file.txt', new Config());
     }
 
-    public function testDelete()
+    public function testDelete(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('delete')
-            ->once();
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('delete');
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
         $adapter->delete('file.txt');
     }
 
-    public function testDeleteDir()
+    /**
+     * @dataProvider getDataForTestDeleteDirectory
+     */
+    public function testDeleteDirectory(string $path): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('delete')
-            ->times(3);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/dir_name/directory1/file1.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->exactly(3))
+            ->method('delete');
+        $storageObject
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn('prefix/dir_name/directory1/file1.txt');
+        $storageObject
+            ->expects($this->once())
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
 
-        $bucket->shouldReceive('object')
-            ->with('prefix/dir_name/directory1/file1.txt')
-            ->once()
-            ->andReturn($storageObject);
+        $bucket
+            ->expects($this->exactly(3))
+            ->method('object')
+            ->withConsecutive(['prefix/dir_name/directory1/file1.txt', []], ['prefix/dir_name/directory1/', []], ['prefix/dir_name/', []])
+            ->willReturnOnConsecutiveCalls($storageObject, $storageObject, $storageObject);
 
-        $bucket->shouldReceive('object')
-            ->with('prefix/dir_name/directory1/')
-            ->once()
-            ->andReturn($storageObject);
-
-        $bucket->shouldReceive('object')
-            ->with('prefix/dir_name/')
-            ->once()
-            ->andReturn($storageObject);
-
-        $bucket->shouldReceive('objects')
+        $bucket
+            ->expects($this->once())
+            ->method('objects')
             ->with([
-                'prefix' => 'prefix/dir_name/'
-            ])->once()
-            ->andReturn([$storageObject]);
+                'prefix' => 'prefix/dir_name/',
+            ])
+            ->willReturn([$storageObject]);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $adapter->deleteDir('dir_name');
+        $adapter->deleteDirectory($path);
     }
 
-    public function testDeleteDirWithTrailingSlash()
+    public function testSetVisibilityPrivate(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('delete')
-            ->times(3);
+        $storageObjectAcl = $this->createMock(Acl::class);
+        $storageObjectAcl
+            ->expects($this->once())
+            ->method('delete')
+            ->with('allUsers');
 
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/dir_name/directory1/file1.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('acl')
+            ->willReturn($storageObjectAcl);
+        $storageObject
+            ->expects($this->exactly(0))
+            ->method('name')
+            ->willReturn('prefix/file.txt');
+        $storageObject
+            ->expects($this->exactly(0))
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
 
-        $bucket->shouldReceive('object')
-            ->with('prefix/dir_name/directory1/file1.txt')
-            ->once()
-            ->andReturn($storageObject);
-
-        $bucket->shouldReceive('object')
-            ->with('prefix/dir_name/directory1/')
-            ->once()
-            ->andReturn($storageObject);
-
-        $bucket->shouldReceive('object')
-            ->with('prefix/dir_name/')
-            ->once()
-            ->andReturn($storageObject);
-
-        $bucket->shouldReceive('objects')
-            ->with([
-                'prefix' => 'prefix/dir_name/'
-            ])->once()
-            ->andReturn([$storageObject]);
-
-        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
-
-        $adapter->deleteDir('dir_name//');
-    }
-
-    public function testSetVisibilityPrivate()
-    {
-        $bucket = Mockery::mock(Bucket::class);
-
-        $storageObjectAcl = Mockery::mock(Acl::class);
-        $storageObjectAcl->shouldReceive('delete')
-            ->with('allUsers')
-            ->once();
-
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('acl')
-            ->once()
-            ->andReturn($storageObjectAcl);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
-                'updated' => '2016-09-26T14:44:42+00:00',
-                'contentType' => 'text/plain',
-                'size' => 5,
-            ]);
-
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file1.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
-        $storageClient = Mockery::mock(StorageClient::class);
+        $storageClient = $this->createMock(StorageClient::class);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $data = $adapter->setVisibility('file1.txt', AdapterInterface::VISIBILITY_PRIVATE);
-        $this->assertArrayHasKey('visibility', $data);
-        $this->assertEquals(AdapterInterface::VISIBILITY_PRIVATE, $data['visibility']);
+        $adapter->setVisibility('file1.txt', Visibility::PRIVATE);
     }
 
-    public function testSetVisibilityPublic()
+    public function testSetVisibilityPublic(): void
     {
-        $bucket = Mockery::mock(Bucket::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObjectAcl = Mockery::mock(Acl::class);
-        $storageObjectAcl->shouldReceive('add')
-            ->withArgs([
+        $storageObjectAcl = $this->createMock(Acl::class);
+        $storageObjectAcl
+            ->expects($this->once())
+            ->method('add')
+            ->with(
                 'allUsers',
                 Acl::ROLE_READER,
-            ])
-            ->once();
+            );
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('acl')
-            ->once()
-            ->andReturn($storageObjectAcl);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
-                'updated' => '2016-09-26T14:44:42+00:00',
-                'contentType' => 'text/plain',
-                'size' => 5,
-            ]);
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('acl')
+            ->willReturn($storageObjectAcl);
+        $storageObject
+            ->expects($this->exactly(0))
+            ->method('name');
+        $storageObject
+            ->expects($this->exactly(0))
+            ->method('info');
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file1.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
-        $storageClient = Mockery::mock(StorageClient::class);
-
-        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
-
-        $data = $adapter->setVisibility('file1.txt', AdapterInterface::VISIBILITY_PUBLIC);
-        $this->assertArrayHasKey('visibility', $data);
-        $this->assertEquals(AdapterInterface::VISIBILITY_PUBLIC, $data['visibility']);
-    }
-
-    public function testHas()
-    {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
-
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('exists')
-            ->once();
-
-        $bucket->shouldReceive('object')
-            ->with('prefix/file.txt')
-            ->once()
-            ->andReturn($storageObject);
+        $storageClient = $this->createMock(StorageClient::class);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $adapter->has('file.txt');
+        $adapter->setVisibility('file1.txt', Visibility::PUBLIC);
     }
 
-    public function testRead()
+    public function testFileExists(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('downloadAsString')
-            ->once()
-            ->andReturn('This is the file contents.');
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
-                'updated' => '2016-09-26T14:44:42+00:00',
-                'contentType' => 'text/plain',
-                'size' => 5,
-            ]);
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('exists')
+            ->willReturn(true);
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
+
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
+
+        self::assertTrue($adapter->fileExists('file.txt'));
+    }
+
+    public function testRead(): void
+    {
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
+
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('downloadAsString')
+            ->willReturn('This is the file contents.');
+        $storageObject
+            ->expects($this->exactly(0))
+            ->method('name');
+        $storageObject
+            ->expects($this->exactly(0))
+            ->method('info');
+
+        $bucket
+            ->expects($this->once())
+            ->method('object')
+            ->with('prefix/file.txt')
+            ->willReturn($storageObject);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
         $data = $adapter->read('file.txt');
 
-        $this->assertArrayHasKey('contents', $data);
-        $this->assertEquals('This is the file contents.', $data['contents']);
+        $this->assertEquals('This is the file contents.', $data);
     }
 
-    public function testReadStream()
+    public function testReadStream(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $stream = Mockery::mock(StreamInterface::class);
-        $stream->shouldReceive('isReadable')
-            ->once()
-            ->andReturn(true);
-        $stream->shouldReceive('isWritable')
-            ->once()
-            ->andReturn(false);
+        $stream = $this->createMock(StreamInterface::class);
+        $stream
+            ->expects($this->once())
+            ->method('isReadable')
+            ->willReturn(true);
+        $stream
+            ->expects($this->once())
+            ->method('isWritable')
+            ->willReturn(false);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('downloadAsStream')
-            ->once()
-            ->andReturn($stream);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
-                'updated' => '2016-09-26T14:44:42+00:00',
-                'contentType' => 'text/plain',
-                'size' => 5,
-            ]);
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('downloadAsStream')
+            ->willReturn($stream);
+        $storageObject
+            ->expects($this->exactly(0))
+            ->method('name');
+        $storageObject
+            ->expects($this->exactly(0))
+            ->method('info');
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
         $data = $adapter->readStream('file.txt');
 
-        $this->assertArrayHasKey('stream', $data);
-        $this->assertInternalType('resource', $data['stream']);
+        $this->assertIsResource($data);
     }
 
-    public function testListContents()
+    public function testListContents(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
 
         $prefix = 'prefix/';
 
-        $bucket->shouldReceive('objects')
-            ->once()
+        $bucket
+            ->expects($this->once())
+            ->method('objects')
             ->with([
                 'prefix' => $prefix,
             ])
-            ->andReturn($this->getMockDirObjects($prefix));
+            ->willReturn($this->getMockDirObjects($prefix));
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
@@ -665,43 +662,47 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param  string  $prefix
-     *
-     * @return array
+     * @return StorageObject[]
      */
-    protected function getMockDirObjects($prefix = '')
+    protected function getMockDirObjects(string $prefix): array
     {
-        $dir1 = Mockery::mock(StorageObject::class);
-        $dir1->shouldReceive('name')
-            ->once()
-            ->andReturn($prefix . 'directory1/');
-        $dir1->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $dir1 = $this->createMock(StorageObject::class);
+        $dir1
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn($prefix . 'directory1/');
+        $dir1
+            ->expects($this->once())
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'application/octet-stream',
                 'size' => 0,
             ]);
 
-        $dir1file1 = Mockery::mock(StorageObject::class);
-        $dir1file1->shouldReceive('name')
-            ->once()
-            ->andReturn($prefix . 'directory1/file1.txt');
-        $dir1file1->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $dir1file1 = $this->createMock(StorageObject::class);
+        $dir1file1
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn($prefix . 'directory1/file1.txt');
+        $dir1file1
+            ->expects($this->once())
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
 
-        $dir2file1 = Mockery::mock(StorageObject::class);
-        $dir2file1->shouldReceive('name')
-            ->once()
-            ->andReturn($prefix . 'directory2/file1.txt');
-        $dir2file1->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $dir2file1 = $this->createMock(StorageObject::class);
+        $dir2file1
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn($prefix . 'directory2/file1.txt');
+        $dir2file1
+            ->expects($this->once())
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
@@ -714,27 +715,30 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         ];
     }
 
-    public function testGetMetadataForFile()
+    public function testGetMetadataForFile(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn('prefix/file.txt');
+        $storageObject
+            ->expects($this->once())
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
@@ -752,27 +756,30 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $metadata);
     }
 
-    public function testGetMetadataForDir()
+    public function testGetMetadataForDir(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/directory/');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn('prefix/directory/');
+        $storageObject
+            ->expects($this->once())
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'application/octet-stream',
                 'size' => 0,
             ]);
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/directory')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
@@ -790,27 +797,30 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $metadata);
     }
 
-    public function testGetSize()
+    public function testGetSize(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn('prefix/file.txt');
+        $storageObject
+            ->expects($this->once())
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
@@ -820,27 +830,30 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $this->assertEquals(5, $metadata['size']);
     }
 
-    public function testGetMimetype()
+    public function testGetMimetype(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn('prefix/file.txt');
+        $storageObject
+            ->expects($this->once())
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
@@ -850,27 +863,30 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $this->assertEquals('text/plain', $metadata['mimetype']);
     }
 
-    public function testGetTimestamp()
+    public function testGetTimestamp(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('name')
-            ->once()
-            ->andReturn('prefix/file.txt');
-        $storageObject->shouldReceive('info')
-            ->once()
-            ->andReturn([
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn('prefix/file.txt');
+        $storageObject
+            ->expects($this->once())
+            ->method('info')
+            ->willReturn([
                 'updated' => '2016-09-26T14:44:42+00:00',
                 'contentType' => 'text/plain',
                 'size' => 5,
             ]);
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
@@ -880,70 +896,76 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $this->assertEquals(1474901082, $metadata['timestamp']);
     }
 
-    public function testGetVisibilityWhenVisibilityIsPrivate()
+    public function testGetVisibilityWhenVisibilityIsPrivate(): void
     {
-        $bucket = Mockery::mock(Bucket::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObjectAcl = Mockery::mock(Acl::class);
-        $storageObjectAcl->shouldReceive('get')
+        $storageObjectAcl = $this->createMock(Acl::class);
+        $storageObjectAcl
+            ->expects($this->once())
+            ->method('get')
             ->with(['entity' => 'allUsers'])
-            ->once()
-            ->andReturn([
+            ->willReturn([
                 'role' => Acl::ROLE_OWNER,
             ]);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('acl')
-            ->once()
-            ->andReturn($storageObjectAcl);
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('acl')
+            ->willReturn($storageObjectAcl);
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
-        $storageClient = Mockery::mock(StorageClient::class);
+        $storageClient = $this->createMock(StorageClient::class);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $visibility = $adapter->getVisibility('file.txt');
-        $this->assertEquals(['visibility' => AdapterInterface::VISIBILITY_PRIVATE], $visibility);
+        $attributes = $adapter->visibility('file.txt');
+        $this->assertEquals(Visibility::PRIVATE, $attributes->visibility());
     }
 
-    public function testGetVisibilityWhenVisibilityIsPublic()
+    public function testGetVisibilityWhenVisibilityIsPublic(): void
     {
-        $bucket = Mockery::mock(Bucket::class);
+        $bucket = $this->createMock(Bucket::class);
 
-        $storageObjectAcl = Mockery::mock(Acl::class);
-        $storageObjectAcl->shouldReceive('get')
+        $storageObjectAcl = $this->createMock(Acl::class);
+        $storageObjectAcl
+            ->expects($this->once())
+            ->method('get')
             ->with(['entity' => 'allUsers'])
-            ->once()
-            ->andReturn([
+            ->willReturn([
                 'role' => Acl::ROLE_READER,
             ]);
 
-        $storageObject = Mockery::mock(StorageObject::class);
-        $storageObject->shouldReceive('acl')
-            ->once()
-            ->andReturn($storageObjectAcl);
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('acl')
+            ->willReturn($storageObjectAcl);
 
-        $bucket->shouldReceive('object')
+        $bucket
+            ->expects($this->once())
+            ->method('object')
             ->with('prefix/file.txt')
-            ->once()
-            ->andReturn($storageObject);
+            ->willReturn($storageObject);
 
-        $storageClient = Mockery::mock(StorageClient::class);
+        $storageClient = $this->createMock(StorageClient::class);
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
 
-        $visibility = $adapter->getVisibility('file.txt');
-        $this->assertEquals(['visibility' => AdapterInterface::VISIBILITY_PUBLIC], $visibility);
+        $attributes = $adapter->visibility('file.txt');
+        $this->assertEquals(Visibility::PUBLIC, $attributes->visibility());
     }
 
-    public function testSetGetStorageApiUri()
+    public function testSetGetStorageApiUri(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
-        $bucket = Mockery::mock(Bucket::class);
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
         $adapter = new GoogleStorageAdapter($storageClient, $bucket);
 
         $this->assertEquals('https://storage.googleapis.com', $adapter->getStorageApiUri());
@@ -955,13 +977,15 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $this->assertEquals('http://this.is.my.base.com', $adapter->getStorageApiUri());
     }
 
-    public function testGetUrl()
+    public function testGetUrl(): void
     {
-        $storageClient = Mockery::mock(StorageClient::class);
+        $storageClient = $this->createMock(StorageClient::class);
 
-        $bucket = Mockery::mock(Bucket::class);
-        $bucket->shouldReceive('name')
-            ->andReturn('my-bucket');
+        $bucket = $this->createMock(Bucket::class);
+        $bucket
+            ->expects($this->exactly(3))
+            ->method('name')
+            ->willReturn('my-bucket');
 
         $adapter = new GoogleStorageAdapter($storageClient, $bucket);
         $this->assertEquals('https://storage.googleapis.com/my-bucket/file.txt', $adapter->getUrl('file.txt'));
@@ -974,5 +998,28 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
         $adapter->setPathPrefix('another-prefix');
         // no bucket name on custom domain
         $this->assertEquals('http://my-domain.com/another-prefix/dir/file.txt', $adapter->getUrl('dir/file.txt'));
+    }
+
+    public function getDataForTestDeleteDirectory(): iterable
+    {
+        yield ['dir_name'];
+        yield ['dir_name//'];
+    }
+
+    public function getDataForTestWriteContent(): iterable
+    {
+        $contents = 'This is the file contents.';
+        $expected = [
+            'type' => 'file',
+            'dirname' => '',
+            'path' => 'file1.txt',
+            'timestamp' => 1474901082,
+            'mimetype' => 'text/plain',
+            'size' => 5,
+        ];
+
+        yield [$expected, $contents, 'projectPrivate', null];
+        yield [$expected, $contents, 'projectPrivate', Visibility::PRIVATE];
+        yield [$expected, $contents, 'publicRead', Visibility::PUBLIC];
     }
 }
