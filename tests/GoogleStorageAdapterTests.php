@@ -14,6 +14,33 @@ use Superbalist\Flysystem\GoogleStorage\GoogleStorageAdapter;
 
 class GoogleStorageAdapterTests extends TestCase
 {
+    public function testDirectoryExists(): void
+    {
+        $storageClient = $this->createMock(StorageClient::class);
+        $bucket = $this->createMock(Bucket::class);
+
+        $storageObject = $this->createMock(StorageObject::class);
+        $storageObject
+            ->expects($this->once())
+            ->method('exists')
+            ->willReturn(true);
+
+        $storageObject
+            ->expects($this->once())
+            ->method('name')
+            ->willReturn('dir_name/');
+
+        $bucket
+            ->expects($this->once())
+            ->method('object')
+            ->with('prefix/dir_name')
+            ->willReturn($storageObject);
+
+        $adapter = new GoogleStorageAdapter($storageClient, $bucket, 'prefix');
+
+        self::assertTrue($adapter->directoryExists('dir_name'));
+    }
+
     public function testGetStorageClient(): void
     {
         $storageClient = $this->createMock(StorageClient::class);

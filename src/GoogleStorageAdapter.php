@@ -51,6 +51,13 @@ class GoogleStorageAdapter implements FilesystemAdapter
         return $this->getPathPrefix() . ltrim($path, '\\/');
     }
 
+    public function directoryExists(string $path): bool
+    {
+        $object = $this->getObject($path);
+
+        return str_ends_with($object->name(), '/') && $object->exists();
+    }
+
     public function fileExists(string $path): bool
     {
         return $this->getObject($path)->exists();
@@ -249,7 +256,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
         $name = $this->removePathPrefix($object->name());
         $info = $object->info();
 
-        $isDir = substr($name, -1) === '/';
+        $isDir = str_ends_with($name, '/');
         if ($isDir) {
             $name = rtrim($name, '/');
         }
@@ -333,7 +340,7 @@ class GoogleStorageAdapter implements FilesystemAdapter
                 $object['path'] = $this->normalizeDirPostfix($object['path']);
             }
 
-            if (strpos($object['path'], $path) !== false) {
+            if (str_contains($object['path'], $path)) {
                 $filtered_objects[] = $object;
             }
         }
