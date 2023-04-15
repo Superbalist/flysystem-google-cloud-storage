@@ -323,7 +323,13 @@ class GoogleStorageAdapter extends AbstractAdapter
      */
     public function has($path)
     {
-        return $this->getObject($path)->exists();
+        if ($this->getObject($path)->exists()) {
+            return true;
+        }
+
+        return count(array_filter($this->listContents($path), function ($item) use ($path) {
+                return $item['path'] === $path;
+            })) === 1;
     }
 
     /**
