@@ -9,11 +9,12 @@ use Google\Cloud\Storage\StorageClient;
 use Google\Cloud\Storage\StorageObject;
 use GuzzleHttp\Psr7\StreamWrapper;
 use League\Flysystem\Adapter\AbstractAdapter;
+use League\Flysystem\Adapter\CanOverwriteFiles;
 use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
 use League\Flysystem\Util;
 
-class GoogleStorageAdapter extends AbstractAdapter
+class GoogleStorageAdapter extends AbstractAdapter implements CanOverwriteFiles
 {
     /**
      * @const STORAGE_API_URI_DEFAULT
