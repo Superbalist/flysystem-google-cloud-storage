@@ -54,6 +54,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 [
                     'name' => 'prefix/file1.txt',
                     'predefinedAcl' => 'projectPrivate',
+                    'metadata' => ['contentType' => 'text/plain']
                 ],
             ])
             ->once()
@@ -98,6 +99,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 [
                     'name' => 'prefix/file1.txt',
                     'predefinedAcl' => 'projectPrivate',
+                    'metadata' => ['contentType' => 'text/plain']
                 ],
             ])
             ->once()
@@ -142,6 +144,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 [
                     'name' => 'prefix/file1.txt',
                     'predefinedAcl' => 'publicRead',
+                    'metadata' => ['contentType' => 'text/plain']
                 ],
             ])
             ->once()
@@ -188,6 +191,7 @@ class GoogleStorageAdapterTests extends \PHPUnit_Framework_TestCase
                 [
                     'name' => 'prefix/file1.txt',
                     'predefinedAcl' => 'projectPrivate',
+                    'metadata' => ['contentType' => 'text/plain']
                 ],
             ])
             ->once()
