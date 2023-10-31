@@ -140,12 +140,12 @@ class GoogleStorageAdapter extends AbstractAdapter
     {
         $options = [];
 
-        if ($visibility = $config->get('visibility')) {
-            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility($visibility);
-        } else {
-            // if a file is created without an acl, it isn't accessible via the console
-            // we therefore default to private
-            $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(AdapterInterface::VISIBILITY_PRIVATE);
+        if (empty($this->bucket->info()['iamConfiguration']['uniformBucketLevelAccess']['enabled'])) {
+            if ($visibility = $config->get('visibility')) {
+                $options['predefinedAcl'] = $this->getPredefinedAclForVisibility($visibility);
+            } else {
+                $options['predefinedAcl'] = $this->getPredefinedAclForVisibility(AdapterInterface::VISIBILITY_PRIVATE);
+            }
         }
 
         if ($metadata = $config->get('metadata')) {
